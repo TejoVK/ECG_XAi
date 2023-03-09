@@ -5,6 +5,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import KFold
+import imblearn
+import streamlit_authenticator as stauth
 
 class DataPreprocessing:
     def __init__(self,data):
@@ -44,7 +46,7 @@ class DataPreprocessing:
     def apply_count_vectorize(self,col,count_vect_obj=None):
         if count_vect_obj ==None:
             from sklearn.feature_extraction.text import CountVectorizer
-            self.objects['Countvec_'+col] = CountVectorizer()
+            self.objects['Countvec_'+col] = CountVectorizer()#instantiating the count vectorizer
             self.data[col] = self.objects['Countvec_'+col].fit_transform(self.data[col])
         else:
             self.objects['Countvec_'+col] = count_vect_obj
@@ -77,15 +79,16 @@ class DataPreprocessing:
         if scale_type == "Standard":
             from pandas import DataFrame as df
             scale_object  = self.objects['Standard scaler']()
+            st.write(scale_object)
             self.train_features=df(data = scale_object.fit_transform(self.train_features),columns = self.features)
-            self.test_features = df(data = scale_object.fit_transform(self.test_features),columns = self.features)
-            self.val_features = df(data = scale_object.fit_transform(self.val_features),columns = self.features)
+            self.test_features = df(data = scale_object.transform(self.test_features),columns = self.features)
+            self.val_features = df(data = scale_object.transform(self.val_features),columns = self.features)
         elif scale_type == "Normalize":
             from pandas import DataFrame as df
             scale_object  = self.objects['Min Max Scalar']()
             self.train_features=df(data = scale_object.fit_transform(self.train_features),columns = self.features)
-            self.test_features = df(data = scale_object.fit_transform(self.test_features),columns = self.features)
-            self.val_features = df(data = scale_object.fit_transform(self.val_features),columns = self.features)
+            self.test_features = df(data = scale_object.transform(self.test_features),columns = self.features)
+            self.val_features = df(data = scale_object.transform(self.val_features),columns = self.features)
 
 
 
@@ -217,7 +220,7 @@ if uploaded_file is not None:
 
     if(st.checkbox("Do you want to preprocess your data?")):
         data_p_object = DataPreprocessing(dataframe)
-
+        # data_p_object = pd.DataFrame(data_p_object)
         st.write("The correlation matrix for your dataset:")
         corr = data_p_object.data.corr()
         mask = np.ones_like(corr,dtype=np.bool_)
@@ -230,6 +233,8 @@ if uploaded_file is not None:
 
         col_names = dataframe.columns
         col_to_remove = st.multiselect("Select the columns you want to remove: ",col_names)
+        if col_to_remove is None:
+            None
         if col_to_remove is not None:
             data_p_object.data.drop(col_to_remove,axis=1,inplace=True)
             if type(col_to_remove) == list:
@@ -269,10 +274,72 @@ if uploaded_file is not None:
             except:
                 st.error("Please enter a valid target variable")
         
+
+        tst_percent = st.text_input("Enter the testing percentage","0.2")
+        st.caption("an optimal value will be between 20-30%")
+        data_p_object.split(float(tst_percent),validation_percent=0.1,rs=42)
+        st.write("Dimensions of the training data: ",data_p_object.train_features.shape)
+        st.write("Dimensions of the testing data: ",data_p_object.test_features.shape)
+        st.write("Dimensions of the validation data: ",data_p_object.val_features.shape)
+        st.caption("Countvectorizer: Helps transform textual data to matrix type, use this if you have random text in your dataset, make sure the data of that column is non categorical")
+        st.caption("Encode Categoricalcolumns: If your datat has categorical columns, this function will convert it to numbers that represent categories this helps reduce errors while training the model.")
+        st.caption("SMOT: Synthetic Minority Oversampling Technique is a statistical technique for increasing the number of cases in your dataset in a balanced way.")
+        wut_to_do = st.multiselect("What all preprocessing you want on your data set?",("Apply countvectorizer","Encode categorical columns","Apply SMOTE","Standardize","Normalize"))
+
+        if "Apply countvectorizer" in wut_to_do:
+            to_vectorize = st.text_input("Enter the column which you want to vectorize: ")
+            if to_vectorize is not None:
+                try:
+                    from sklearn.feature_extraction.text import CountVectorizer
+                    data_p_object.objects['Countvec_'+to_vectorize] = CountVectorizer()#instantiating the count vectorizer
+                    data_p_object.data[to_vectorize] = data_p_object.objects['Countvec_'+to_vectorize].fit_transform(data_p_object.data[to_vectorize])
+                except:
+                    st.error("Please enter a valid column name")
+
+
+        if "Encode categorical columns" in wut_to_do:
+            
+            from sklearn.preprocessing import LabelEncoder
+            label_encoder_objects ={}
+            edit_columns = data_p_object.get_object_column()
+            if edit_columns is None:
+                st.error("The Dataset does'nt contain any categorical columns")
+            for col in edit_columns:
+                label_object = LabelEncoder()
+                data_p_object.data[col]=label_object.fit_transform(data_p_object.data[col])
+                label_encoder_objects[col+"_encoder_object"] = label_object
+            data_p_object.objects['Label_Encoder'] = label_encoder_objects
         
-        st.multiselect("What all preprocessing you want on your data set?",("drop colums","apply count vectorization","f"))
+        if "Apply SMOTE" in wut_to_do:
+            from imblearn.over_sampling import SMOTE
+            smote_object = SMOTE()
+            data_p_object.train_features,data_p_object.train_target = smote_object.fit_resample(data_p_object.train_features,data_p_object.train_target)
+            data_p_object.objects['Smote object'] = smote_object
 
-
+        if "Standardize" in wut_to_do:
+            from pandas import DataFrame as df
+            scale_object  = data_p_object.objects['Standard scaler']()
+            # st.write( data_p_object.shape())
+            data_p_object.train_features=df(data = scale_object.fit_transform(data_p_object.train_features),columns = data_p_object.features)
+            data_p_object.test_features = df(data = scale_object.fit_transform(data_p_object.test_features),columns = data_p_object.features)
+            data_p_object.val_features = df(data = scale_object.fit_transform(data_p_object.val_features),columns = data_p_object.features)
+        
+        if "Normalize" in wut_to_do:
+            from pandas import DataFrame as df
+            scale_object  = data_p_object.objects['Min Max Scalar']()
+            data_p_object.train_features=df(data = scale_object.fit_transform(data_p_object.train_features),columns = data_p_object.features)
+            data_p_object.test_features = df(data = scale_object.fit_transform(data_p_object.test_features),columns = data_p_object.features)
+            data_p_object.val_features = df(data = scale_object.fit_transform(data_p_object.val_features),columns = data_p_object.features)
+        
+        st.write(":partying_face: WOILAAA you have finished the first step i.e., preprocessing :partying_face:")
+        # st.caption("take a sneekpeek of your data: ")
+        # data_p_object = float(data_p_object)
+        # data_p_object = pd.DataFrame(data_p_object)
+        # st.write(type(data_p_object))
 else:
     st.info("Please upload a dataset to continue")
-    
+
+#########################################################################################################################################################################
+#REGRESSION
+model_obj = MachineLearningRegression(data_p_object)
+# review = model_obj.evaluvate()
