@@ -342,4 +342,5 @@ else:
 #########################################################################################################################################################################
 #REGRESSION
 model_obj = MachineLearningRegression(data_p_object)
-# review = model_obj.evaluvate()
+review = model_obj.evaluvate()
+
