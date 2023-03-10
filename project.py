@@ -371,9 +371,202 @@ if uploaded_file is not None:
         model_obj.model_evaluvation_dict['best model'] = model_obj.best_model
         
         review = model_obj.model_evaluvation_dict
-        st.write(review) 
-
+        # st.write(review) 
         
+        st.caption("Models that we have:")
+        st.caption("LinearRegression")
+        st.caption("Ridge")
+        st.caption("Lasso")
+        st.caption("DecisionTreeRegressor")
+        st.caption("RandomForestRegressor")
+        st.caption("KNeighborsRegressor")
+        choise = st.selectbox("What regression model do you want :", ("All","Select a few","Best"))
+        if choise == "All":
+            analyse = st.selectbox("How would you like to analyse the results? ",("Numerically","Graphically"))
+            if analyse == "Numerically":
+                to_check = review['best model']['Name']
+                # st.text(to_check)
+                for model_name,metrik in review.items():
+                    st.header(model_name)
+                    for param,value in metrik.items():
+                        if model_name == to_check:
+                            st.write(param,":",value)
+                        else:
+                            st.write(param,":",value)
+
+            if analyse == "Graphically":
+                r2_score_list,MSE_list,MAE_list,MAPE_list={},{},{},{}
+                for model in review:
+                    if model!='best model':
+                        r2_score_list[model] = review[model]['r2 score']
+                        MSE_list[model] = review[model]['MSE']
+                        MAE_list[model] = review[model]['MAE']
+                        MAPE_list[model] = review[model]['MAPE']
+                # group_labels = ['LinearRegression', 'Ridge', 'Lasso',"DecisionTreeRegressor","RandomForestRegressor","KNeighborsRegressor"]
+                fig,axes = plt.subplots(nrows=2,ncols=2,figsize=(35,45))
+                # Figure 
+                a = sns.barplot(x=list(r2_score_list.keys()),y=list(r2_score_list.values()),ax=axes[0][0])
+                a.set_title("R2 SCORE PLOT\n",fontsize=20)
+                a.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                for size in a.containers:
+                    a.bar_label(size,fontsize=15)
+
+                # Figure 
+                b = sns.barplot(x=list(MSE_list.keys()),y=list(MSE_list.values()),ax=axes[0][1])
+                b.set_title("MSE PLOT\n",fontsize=20)
+                b.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                for size in b.containers:
+                    b.bar_label(size,fontsize=15)
+
+                # Figure 
+                c = sns.barplot(x=list(MAE_list.keys()),y=list(MAE_list.values()),ax=axes[1][0])
+                c.set_title("MAE PLOT\n",fontsize=20)
+                c.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                for size in c.containers:
+                    c.bar_label(size,fontsize=15)
+
+                # Figure 
+                d = sns.barplot(x=list(MAPE_list.keys()),y=list(MAPE_list.values()),ax=axes[1][1])
+                d.set_title("MAPE PLOT\n",fontsize=20)
+                d.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                for size in d.containers:
+                    d.bar_label(size,fontsize=15)
+                st.write(fig)
+
+        if choise=="Best":
+            best_model = review['best model']['Name']
+            analyse = st.selectbox("How would you like to analyse the results? ",("Numerically","Graphically"))
+            if analyse == "Numerically":
+                for model_name,metrik in review.items():
+                    if model_name==best_model:
+                        st.header(model_name)
+                        for param,value in metrik.items():
+                            st.write(param,":",value)
+            
+            if analyse == "Graphically":
+                r2_score_list,MSE_list,MAE_list,MAPE_list={},{},{},{}
+                for model in review:
+                    if model == best_model :
+                        r2_score_list[model] = review[model]['r2 score']
+                        MSE_list[model] = review[model]['MSE']
+                        MAE_list[model] = review[model]['MAE']
+                        MAPE_list[model] = review[model]['MAPE']
+                # group_labels = ['LinearRegression', 'Ridge', 'Lasso',"DecisionTreeRegressor","RandomForestRegressor","KNeighborsRegressor"]
+                fig,axes = plt.subplots(nrows=2,ncols=2,figsize=(35,45))
+                # Figure 
+                a = sns.barplot(x=list(r2_score_list.keys()),y=list(r2_score_list.values()),ax=axes[0][0])
+                a.set_title("R2 SCORE PLOT\n",fontsize=20)
+                a.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                for size in a.containers:
+                    a.bar_label(size,fontsize=15)
+
+                # Figure 
+                b = sns.barplot(x=list(MSE_list.keys()),y=list(MSE_list.values()),ax=axes[0][1])
+                b.set_title("MSE PLOT\n",fontsize=20)
+                b.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                for size in b.containers:
+                    b.bar_label(size,fontsize=15)
+
+                # Figure 
+                c = sns.barplot(x=list(MAE_list.keys()),y=list(MAE_list.values()),ax=axes[1][0])
+                c.set_title("MAE PLOT\n",fontsize=20)
+                c.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                for size in c.containers:
+                    c.bar_label(size,fontsize=15)
+
+                # Figure 
+                d = sns.barplot(x=list(MAPE_list.keys()),y=list(MAPE_list.values()),ax=axes[1][1])
+                d.set_title("MAPE PLOT\n",fontsize=20)
+                d.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                for size in d.containers:
+                    d.bar_label(size,fontsize=15)
+                st.write(fig)
+        if choise=="Select a few":
+            best_model = review['best model']['Name']
+            model_selected = st.multiselect("Select the models you want to work with:",('LinearRegression', 'Ridge', 'Lasso','DecisionTreeRegressor','RandomForestRegressor','KNeighborsRegressor'))
+            analyse = st.selectbox("How would you like to analyse the results? ",("Numerically","Graphically"))
+            if best_model not in model_selected:
+                st.warning("YOUR SELECTED MODELS DOES'NT INCLUDE THE BEST MODEL, YOU MIGHT WANT TO CONSIDER IT")
+            
+            if analyse == "Numerically":
+                for model_name,metrik in review.items():
+                    if model_name in model_selected:
+                        st.header(model_name)
+                        for param,value in metrik.items():
+                            st.write(param,":",value)
+            
+            if analyse == "Graphically":
+                r2_score_list,MSE_list,MAE_list,MAPE_list={},{},{},{}
+                for model in review:
+                    if model in model_selected :
+                        r2_score_list[model] = review[model]['r2 score']
+                        MSE_list[model] = review[model]['MSE']
+                        MAE_list[model] = review[model]['MAE']
+                        MAPE_list[model] = review[model]['MAPE']
+                # group_labels = ['LinearRegression', 'Ridge', 'Lasso',"DecisionTreeRegressor","RandomForestRegressor","KNeighborsRegressor"]
+                fig,axes = plt.subplots(nrows=2,ncols=2,figsize=(35,45))
+                # Figure 
+                a = sns.barplot(x=list(r2_score_list.keys()),y=list(r2_score_list.values()),ax=axes[0][0])
+                a.set_title("R2 SCORE PLOT\n",fontsize=20)
+                a.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                for size in a.containers:
+                    a.bar_label(size,fontsize=15)
+
+                # Figure 
+                b = sns.barplot(x=list(MSE_list.keys()),y=list(MSE_list.values()),ax=axes[0][1])
+                b.set_title("MSE PLOT\n",fontsize=20)
+                b.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                for size in b.containers:
+                    b.bar_label(size,fontsize=15)
+
+                # Figure 
+                c = sns.barplot(x=list(MAE_list.keys()),y=list(MAE_list.values()),ax=axes[1][0])
+                c.set_title("MAE PLOT\n",fontsize=20)
+                c.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                for size in c.containers:
+                    c.bar_label(size,fontsize=15)
+
+                # Figure 
+                d = sns.barplot(x=list(MAPE_list.keys()),y=list(MAPE_list.values()),ax=axes[1][1])
+                d.set_title("MAPE PLOT\n",fontsize=20)
+                d.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                for size in d.containers:
+                    d.bar_label(size,fontsize=15)
+                st.write(fig)
+
+        for_kfold = st.selectbox("Do you want to perform k-Fold to improve model accuracy?",("Yes","No"))
+        st.info("This can change the best model to some other model")
+        st.caption("This will take some time to process, since its itterative process")
+        if for_kfold == "Yes":
+            fig,axes = plt.subplots(figsize=(14,2))
+            kf = KFold(n_splits=10)
+            # from sklearn.linear_model import LinearRegression,Lasso
+            models = [LinearRegression(),Lasso(),Ridge(),DecisionTreeRegressor(),RandomForestRegressor(),KNeighborsRegressor()]
+            score_list = {'LinearRegression':[],'Lasso':[], 'Ridge':[],"DecisionTreeRegressor":[],"RandomForestRegressor":[],"KNeighborsRegressor":[]}
+            for model in models:
+                for train,test in kf.split(data_p_object.train_features,data_p_object.train_target):
+                    model.fit(data_p_object.train_features.iloc[train],data_p_object.train_target.iloc[train])
+                    score_list[str(model).replace("()","")].append(model.score(data_p_object.train_features.iloc[train],data_p_object.train_target.iloc[train]))
+                score_list[str(model).replace("()","")] = max(score_list[str(model).replace("()","")])*100
+            a = sns.barplot(y = list(score_list.keys()),x = list(score_list.values()),ax=axes)
+            for i in a.containers:
+                a.bar_label(i)
+            st.write(fig)
+        
+        knn = st.selectbox("Want to know the best K value for KNN algo?",("Yes","No"))
+        if knn == "Yes":
+            max_k = st.slider("Select max k value: ",1,11)
+            model_list = {str(i):KNeighborsRegressor(i) for i in range(1,max_k+1)}
+            accuracy_list={}
+            for model_name,model in model_list.items():
+                model.fit(data_p_object.train_features,data_p_object.train_target)
+                accuracy_list[model_name] = model.score(data_p_object.val_features,data_p_object.val_target)
+            fig,axes = plt.subplots(figsize=(10,5))
+            a = sns.barplot(x=list(accuracy_list.keys()),y=list(accuracy_list.values()),ax=axes)
+            for i in a.containers:
+                a.bar_label(i)
+            st.write(fig)
+            print("The best value of K is",list(accuracy_list.keys())[list(accuracy_list.values()).index(max(list(accuracy_list.values())))])
 
 
 # else:
