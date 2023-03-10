@@ -8,6 +8,12 @@ from sklearn.model_selection import KFold
 import imblearn
 import streamlit_authenticator as stauth
 
+from sklearn.linear_model import LinearRegression,Ridge,Lasso
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.neighbors import KNeighborsRegressor
+
+
 class DataPreprocessing:
     def __init__(self,data):
         self.data = data
@@ -217,9 +223,9 @@ if uploaded_file is not None:
     # Can be used wherever a "file-like" object is accepted:
     dataframe = pd.read_csv(uploaded_file)
     st.write(dataframe.head(5))
-
+    data_p_object = DataPreprocessing(dataframe)
     if(st.checkbox("Do you want to preprocess your data?")):
-        data_p_object = DataPreprocessing(dataframe)
+        
         # data_p_object = pd.DataFrame(data_p_object)
         st.write("The correlation matrix for your dataset:")
         corr = data_p_object.data.corr()
@@ -263,8 +269,8 @@ if uploaded_file is not None:
 
         st.table(data_p_object.data.isnull().any())
         
-
-        target = st.text_input("Enter the target Variable")
+        lis_for_target = data_p_object.features
+        target = st.selectbox("Select the target Variable: ",list(lis_for_target))
         if target is not None:
             try:
                 data_p_object.input =  data_p_object.data.drop(target,axis=1)
@@ -332,15 +338,43 @@ if uploaded_file is not None:
             data_p_object.val_features = df(data = scale_object.fit_transform(data_p_object.val_features),columns = data_p_object.features)
         
         st.write(":partying_face: WOILAAA you have finished the first step i.e., preprocessing :partying_face:")
-        # st.caption("take a sneekpeek of your data: ")
-        # data_p_object = float(data_p_object)
-        # data_p_object = pd.DataFrame(data_p_object)
-        # st.write(type(data_p_object))
-else:
-    st.info("Please upload a dataset to continue")
 
 #########################################################################################################################################################################
 #REGRESSION
-model_obj = MachineLearningRegression(data_p_object)
-review = model_obj.evaluvate()
+    if(st.checkbox("Do you want to perform regression on your data set?")):
+        model_obj = MachineLearningRegression(data_p_object)
+        for model,dic in model_obj.model_evaluvation_dict.items():
+            model_obj.model_evaluvation_dict[model]['model_object'].fit(model_obj.train_features,model_obj.train_target)
+            model_obj.trained_models.append(model_obj.model_evaluvation_dict[model]['model_object'])
+            model_obj.model_prediction[model] = model_obj.model_evaluvation_dict[model]['model_object'].predict(model_obj.test_features)
+        
+        from sklearn.metrics import r2_score,mean_absolute_error,mean_squared_error,mean_absolute_percentage_error
+        metrics = {'r2 score':r2_score,'MAE':mean_absolute_error,'MSE':mean_squared_error,'MAPE':mean_absolute_percentage_error}
+        for model,dic in model_obj.model_evaluvation_dict.items():
+            for metric,obj in metrics.items():
+                model_obj.model_evaluvation_dict[model][metric] = obj(model_obj.model_prediction[model],model_obj.test_target)
+                if model_obj.model_evaluvation_dict[model]['r2 score']>model_obj.best_r2_score:
+                    model_obj.best_model = {'Name':model,
+                                       'r2 score':model_obj.model_evaluvation_dict[model]['r2 score'],
+                                        'model_obj':model_obj.model_evaluvation_dict[model]['model_object']}
+                    model_obj.best_r2_score = model_obj.model_evaluvation_dict[model]['r2 score']
+    
+        # model_obj.fit()
+        # model_obj.Score_test_dataset()
+        if type(model_obj.prediction_array)==np.ndarray:
+            model_obj.model_evaluvation_dict['prediction']=model_obj.best_model['model_obj'].predict(np.array([model_obj.prediction_array]))[0]
+        for model in model_obj.model_evaluvation_dict:
+            if model!='prediction':
+                del model_obj.model_evaluvation_dict[model]['model_object']
+        # model_obj.best_model_object = model_obj.best_model['model_obj']
+        # del model_obj.best_model['model_obj']
+        model_obj.model_evaluvation_dict['best model'] = model_obj.best_model
+        
+        review = model_obj.model_evaluvation_dict
+        st.write(review)
 
+        
+
+
+# else:
+#   st.info("Please upload a dataset to continue")
