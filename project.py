@@ -371,7 +371,7 @@ if uploaded_file is not None:
         model_obj.model_evaluvation_dict['best model'] = model_obj.best_model
         
         review = model_obj.model_evaluvation_dict
-        st.write(review)
+        st.write(review) 
 
         
 
