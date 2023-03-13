@@ -533,8 +533,18 @@ if uploaded_file is not None:
                 for size in d.containers:
                     d.bar_label(size,fontsize=15)
                 st.write(fig)
+        validate = st.selectbox("Do you want to validate your model using validation data?",("No","Yes"))
+        if validate == "Yes":
+            score_list={}
+            for i in model_obj.trained_models:
+                score_list[str(i).replace("()","")] = i.score(data_p_object.val_features,data_p_object.val_target)
+            fig,axes = plt.subplots(figsize=(15,8))
+            a = sns.barplot(x = list(score_list.keys()),y = list(score_list.values()),ax=axes)
+            for i in a.containers:
+                a.bar_label(i)
+            st.write(fig)
 
-        for_kfold = st.selectbox("Do you want to perform k-Fold to improve model accuracy?",("Yes","No"))
+        for_kfold = st.selectbox("Do you want to perform k-Fold to improve model accuracy?",("No","Yes"))
         st.info("This can change the best model to some other model")
         st.caption("This will take some time to process, since its itterative process")
         if for_kfold == "Yes":
@@ -553,10 +563,11 @@ if uploaded_file is not None:
                 a.bar_label(i)
             st.write(fig)
         
-        knn = st.selectbox("Want to know the best K value for KNN algo?",("Yes","No"))
+        knn = st.selectbox("Want to know the best K value for KNN algo?",("No","Yes"))
         if knn == "Yes":
-            max_k = st.slider("Select max k value: ",1,11)
-            model_list = {str(i):KNeighborsRegressor(i) for i in range(1,max_k+1)}
+            min_k = int(st.text_input("Enter min value of K"))
+            st.caption("The max value of k will be ten more than min value of k.")
+            model_list = {str(i):KNeighborsRegressor(i) for i in range(min_k,min_k+11)}
             accuracy_list={}
             for model_name,model in model_list.items():
                 model.fit(data_p_object.train_features,data_p_object.train_target)
@@ -567,7 +578,89 @@ if uploaded_file is not None:
                 a.bar_label(i)
             st.write(fig)
             print("The best value of K is",list(accuracy_list.keys())[list(accuracy_list.values()).index(max(list(accuracy_list.values())))])
+        predict = st.selectbox("Do you want to predict any sample's output?",("No","Yes"))
+        if predict == "Yes":
+            # predict_models = st.multiselect("Select the regression models you want to predict with: ",('LinearRegression', 'Ridge', 'Lasso',"DecisionTreeRegressor","RandomForestRegressor","KNeighborsRegressor"))
+            # st.write(data_p_object.features)
+            categories = data_p_object.features
+            prediction_array={}
+            feature = []
+            for value in categories:
+                # st.write("enter value for ",value)
+                # num = st.text_input('exter the value of')
+                prediction_array[value]=None
+            for k,v in prediction_array.items():
+                prediction_array[k]=st.number_input(k,v)
+            # st.write(prediction_array)
+            for k,v in prediction_array.items():
+                feature.append(v)
+            # if type(self.prediction_array)==np.ndarray:
+            model_obj.model_evaluvation_dict['prediction']=model_obj.best_model['model_obj'].predict(np.array([feature]))[0]
+            st.write(model_obj.model_evaluvation_dict)
 
+        #"""i have to add code for taking input of columns with object """
+#########################################################################################################################################################################
+#REGRESSION
+    if(st.checkbox("Do you want to perform Classification on your data set?")):
+        model_obj_classification = MacineLearningClassification(data_p_object)
+        #fitting model
+        def draw_plot(review,str):
+            fig,axes = plt.subplots(nrows=1,ncols=1,figsize=(18,10))
+            accuracy = {model:review[model][str] if model!='best model' else None for model in review}
+            del accuracy['best model']
+            a = sns.barplot(y=list(accuracy.keys()),x=list(accuracy.values()),palette="ocean_r",ax=axes)
+            return a
+        def draw_heatmap(review):
+            fig,axes = plt.subplots(nrows=3,ncols=2,figsize=(15,20))
+            confusion_matrixes = {model:review[model]['confusion matrix for test data'] if model!='best model' else None for model in review}
+            del confusion_matrixes['best model']
+            row = col = 0
+            for model in confusion_matrixes:
+                if col in [2,4]:
+                    col=0
+                    row+=1
+                    a = sns.heatmap(confusion_matrixes[model],ax = axes[row][col],cmap='ocean',annot=True,cbar=False,annot_kws={'fontsize':15})
+                    a.set_title("\n"+model+"\n")
+                    col+=1
+                else:
+                    a = sns.heatmap(confusion_matrixes[model],ax = axes[row][col],cmap='ocean',annot=True,cbar=False,annot_kws={'fontsize':15})
+                    col+=1
+                    a.set_title("\n"+model+"\n")
+            fig.show()
+        for model,dic in model_obj_classification.model_evaluvation_dict.items():
+            model_obj_classification.model_evaluvation_dict[model]['model_object'].fit(model_obj_classification.train_features,model_obj_classification.train_target)
+            model_obj_classification.trained_models.append(model_obj_classification.model_evaluvation_dict[model]['model_object'])
+            model_obj_classification.model_prediction[model] = model_obj_classification.model_evaluvation_dict[model]['model_object'].predict(model_obj_classification.test_features)
+        #noting test data values:
+        for model,dic in model_obj_classification.model_evaluvation_dict.items():
+            model_obj_classification.model_evaluvation_dict[model]['score on test data'] = model_obj_classification.model_evaluvation_dict[model]['model_object'].score(model_obj_classification.test_features,model_obj_classification.test_target)*100
+            if (model_obj_classification.model_evaluvation_dict[model]['score on test data']>model_obj_classification.best_accuracy):
+                model_obj_classification.best_model = {'Model_obj':model_obj_classification.model_evaluvation_dict[model]['model_object'],
+                                'Name':model,
+                                'Accuracy':model_obj_classification.model_evaluvation_dict[model]['score on test data']}
+                model_obj_classification.best_accuracy = model_obj_classification.model_evaluvation_dict[model]['score on test data']
+        #evaluate function
+        # self.fit()
+        # self.Score_test_data()
+        model_obj_classification.create_confusion_matrix()
+        model_obj_classification.create_f1_precision_recall()
+        if type(model_obj_classification.prediction_array)==np.ndarray:
+            model_obj_classification.model_evaluvation_dict['prediction']=model_obj_classification.best_model['Model_obj'].predict(np.array([model_obj_classification.prediction_array]))[0]
+        for model in model_obj_classification.model_evaluvation_dict:
+            if model!='prediction':
+                del model_obj_classification.model_evaluvation_dict[model]['model_object']
+        model_obj_classification.best_model_object = model_obj_classification.best_model['Model_obj']
+        del model_obj_classification.best_model['Model_obj']
+        model_obj_classification.model_evaluvation_dict['best model'] = model_obj_classification.best_model
+        review_classification =  model_obj_classification.model_evaluvation_dict
 
-# else:
-#   st.info("Please upload a dataset to continue")
+        
+        a = draw_plot(review_classification,'score on test data')
+        a.set_title('\nAccuracy\n')
+        for s in a.containers:
+            a.bar_label(s,fontsize=10)
+        st.write(a)
+            
+
+    # else:
+    #   st.info("Please upload a dataset to continue")
