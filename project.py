@@ -662,6 +662,14 @@ if authentication_status == True:
     #########################################################################################################################################################################
     #CLASSIFICATION
         if(st.checkbox("Do you want to perform Classification on your data set?")):
+            st.caption("Models that we have:")
+            st.caption("LogisticRegression")
+            st.caption("GaussianNB")
+            st.caption("SVC")
+            st.caption("DecisionTreeClassifier")
+            st.caption("RandomForestClassifier")
+            st.caption("KNeighborsClassifier")
+            
             model_obj_classification = MacineLearningClassification(data_p_object)
             #fitting model
             def draw_plot(review,str):
@@ -686,7 +694,7 @@ if authentication_status == True:
                         a = sns.heatmap(confusion_matrixes[model],ax = axes[row][col],cmap='ocean',annot=True,cbar=False,annot_kws={'fontsize':15})
                         col+=1
                         a.set_title("\n"+model+"\n")
-                fig.show()
+                return fig
             for model,dic in model_obj_classification.model_evaluvation_dict.items():
                 model_obj_classification.model_evaluvation_dict[model]['model_object'].fit(model_obj_classification.train_features,model_obj_classification.train_target)
                 model_obj_classification.trained_models.append(model_obj_classification.model_evaluvation_dict[model]['model_object'])
@@ -713,21 +721,40 @@ if authentication_status == True:
             del model_obj_classification.best_model['Model_obj']
             model_obj_classification.model_evaluvation_dict['best model'] = model_obj_classification.best_model
             review_classification =  model_obj_classification.model_evaluvation_dict
-
-            def draw_plot(review,str):
-                fig,axes = plt.subplots(nrows=1,ncols=1,figsize=(18,10))
-                accuracy = {model:review[model][str] if model!='best model' else None for model in review}
-                del accuracy['best model']
-                a = sns.barplot(y=list(accuracy.keys()),x=list(accuracy.values()),palette="ocean_r",ax=axes)
-                st.write(a)
-        
-                # st.write(plt.plot(a))
-                a.set_title('\nAccuracy\n')
-                for s in a.containers:
-                    st.write(a.bar_label(s,fontsize=10))
             
-            a = draw_plot(review_classification,'score on test data')    
-                
+            choose = st.selectbox("What regression model do you want:", ("All","Select some","Best"))
+            if choose == "All":
+                analyse = st.selectbox("How would you like to analyse the results?",("Numerically","Graphically"))
+                if analyse == "Numerically":
+                    to_check = review_classification['best model']['Name']
+                    # st.text(to_check)
+                    for model_name,metrik in review_classification.items():
+                        st.header(model_name)
+                        for param,value in metrik.items():
+                            if param != "confusion matrix for test data":
+                                if model_name == "best model":
+                                    if param == "Accuracy":
+                                        st.write(param,":",round(value,3))
+                                    else:
+                                        st.write(param,":",value)
+                                else:
+                                    st.write(param,":",round(value,3))
+                if analyse == "Graphically":
+                    def draw_plot(review,str):
+                        figs,axes = plt.subplots(nrows=1,ncols=1,figsize=(18,10))
+                        accuracy = {model:round(review[model][str],2) if model!='best model' else None for model in review}
+                        del accuracy['best model']
+                        a = sns.barplot(y=list(accuracy.keys()),x=list(accuracy.values()),palette="ocean_r",ax=axes)
+                        a.set_title('\nAccuracy\n')
+                        for s in a.containers:
+                            a.bar_label(s,fontsize=10)
+                        st.write(figs)
+                    a = draw_plot(review_classification,'score on test data')    
+            corel = st.selectbox("Do you want to visualise the heat map?",("No","Yes"))
+            if corel == "Yes":
+               figure =  draw_heatmap(review_classification)
+               st.write(figure)
+
 
         # else:
         #   st.info("Please upload a dataset to continue")
