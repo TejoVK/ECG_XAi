@@ -13,6 +13,13 @@ from sklearn.linear_model import LinearRegression,Ridge,Lasso
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neighbors import KNeighborsRegressor
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+
 
 names = ["Adarak Baba","Ram Babu"]
 usernames = ["adarak","ram"]
@@ -607,7 +614,8 @@ if authentication_status == True:
             st.caption("This will take some time to process, since its itterative process")
             if for_kfold == "Yes":
                 fig,axes = plt.subplots(figsize=(14,2))
-                kf = KFold(n_splits=10)
+                splits = st.number_input("Enter a value of splits for k fold: ",10)
+                kf = KFold(n_splits=splits)
                 # from sklearn.linear_model import LinearRegression,Lasso
                 models = [LinearRegression(),Lasso(),Ridge(),DecisionTreeRegressor(),RandomForestRegressor(),KNeighborsRegressor()]
                 score_list = {'LinearRegression':[],'Lasso':[], 'Ridge':[],"DecisionTreeRegressor":[],"RandomForestRegressor":[],"KNeighborsRegressor":[]}
@@ -750,11 +758,27 @@ if authentication_status == True:
                             a.bar_label(s,fontsize=10)
                         st.write(figs)
                     a = draw_plot(review_classification,'score on test data')    
-            corel = st.selectbox("Do you want to visualise the heat map?",("No","Yes"))
+            corel = st.selectbox("Do you want to visualise the confusion matrix?",("No","Yes"))
             if corel == "Yes":
                figure =  draw_heatmap(review_classification)
                st.write(figure)
-
-
+            kfold = st.selectbox("Do you want to perform k-Fold to improve model accuracy? ",("No","Yes"))
+            st.info("This can change the best model to some other model")
+            if kfold == "Yes":
+                fig,axes = plt.subplots(figsize=(14,2))
+                splits = st.number_input("Enter a value of splits for k fold:",10)
+                kf = KFold(n_splits=splits)
+                # from sklearn.linear_model import LinearRegression,Lasso
+                models = [LogisticRegression(),DecisionTreeClassifier(),RandomForestClassifier(),GaussianNB(),KNeighborsClassifier(),SVC()]
+                score_list = {'LogisticRegression':[],'DecisionTreeClassifier':[], 'RandomForestClassifier':[],"GaussianNB":[],"KNeighborsClassifier":[],"SVC":[]}
+                for model in models:
+                    for train,test in kf.split(data_p_object.train_features,data_p_object.train_target):
+                        model.fit(data_p_object.train_features.iloc[train],data_p_object.train_target.iloc[train])
+                        score_list[str(model).replace("()","")].append(round(model.score(data_p_object.train_features.iloc[train],data_p_object.train_target.iloc[train]),3))
+                    score_list[str(model).replace("()","")] = max(score_list[str(model).replace("()","")])*100
+                a = sns.barplot(y = list(score_list.keys()),x = list(score_list.values()),ax=axes)
+                for i in a.containers:
+                    a.bar_label(i)
+                st.write(fig)
         # else:
         #   st.info("Please upload a dataset to continue")
