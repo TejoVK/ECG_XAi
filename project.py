@@ -780,5 +780,67 @@ if authentication_status == True:
                 for i in a.containers:
                     a.bar_label(i)
                 st.write(fig)
+            st.caption("Have a confussion selecting the best hyperameters? Try using GridSearchCV... ")
+            grid = st.selectbox("Do you want to know the best parameters for your models using GridSearchCV? ",("No","Yes"))
+            if grid == "Yes":
+                C = st.text_input("Enter the different values of C for SVC seperated by a comma',' :")
+                C = C.split(',')
+                
+                kernel = st.multiselect("Select the kernels for SVC: ",("rbf","linear",'sigmoid'))
+                criterion = st.multiselect("Select the function to measure the quality of a split for Decision Tree",('gini', 'entropy'))
+                depth = st.text_input("Enter the different maximum depths of the tree seperated by a comma ',' for Decision Tree:")
+                depth = depth.split(',')
+                
+                trees = st.text_input("Enter the different number of trees for Random Forest regression seperated by a comma',' :")
+                trees = trees.split(',')
+                
+                k = st.text_input("Enter the different number of neighbors for KNN seperated by a comma',' :")
+                k = k.split(',')
+                for i in range(0, len(trees)):
+                    trees[i] = int(trees[i])
+                for i in range(0, len(depth)):
+                    depth[i] = int(depth[i])
+                for i in range(0, len(C)):
+                    C[i] = int(C[i])
+                for i in range(0, len(k)):
+                    k[i] = int(k[i])
+                k_fld = int(st.number_input("Enter the number of folds: "))
+                from sklearn.model_selection import GridSearchCV
+                hypr_parm = {
+
+                'svc':{'model': SVC(gamma='auto'),
+                        'parameters':{
+                            'C':C,
+                            'kernel':kernel
+                        }
+                },
+                'Decission_tree':{'model':DecisionTreeClassifier(),
+                        'parameters':{
+                            'criterion': criterion,
+                            'max_depth':depth
+                        }},
+                'Random_forest':{'model':RandomForestClassifier(),
+                        'parameters':{
+                            'n_estimators':trees
+                        }},
+                    
+                'KNN':{'model':KNeighborsClassifier(),
+                        'parameters':{
+                            'n_neighbors':k
+                        }}
+
+                }
+                score=[]
+                for mod,feature in hypr_parm.items():
+                    bestmodl = GridSearchCV(feature['model'],feature['parameters'],cv=k_fld,return_train_score=False)
+                    bestmodl.fit(data_p_object.train_features, data_p_object.train_target)
+                    score.append({
+                        'model':mod,
+                        'best_params':bestmodl.best_params_,
+                        'best_score':bestmodl.best_score_
+                    })
+
+                valuess= pd.DataFrame(score, columns = ['model','best_params','best_score'])
+                st.write(valuess)
         # else:
         #   st.info("Please upload a dataset to continue")
