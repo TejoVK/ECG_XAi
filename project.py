@@ -19,6 +19,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
+from sklearn.model_selection import GridSearchCV
 
 
 names = ["Adarak Baba","Ram Babu"]
@@ -108,11 +109,18 @@ if authentication_status == True:
             from sklearn.preprocessing import LabelEncoder
             label_encoder_objects ={}
             edit_columns = self.get_object_column()
+            name_mapping = {}
             for col in edit_columns:
                 label_object = LabelEncoder()
+                # conversion = label_object.get_params(deep=True)
                 self.data[col]=label_object.fit_transform(self.data[col])
                 label_encoder_objects[col+"_encoder_object"] = label_object
             self.objects['Label_Encoder'] = label_encoder_objects
+            val = label_object.classes_
+            for i in val:
+                mapped_val = int(label_object.transform(list(i)))
+                name_mapping[i] = mapped_val
+            return name_mapping
         def change_columns(self,columns):
             self.data = self.data[columns]
         def apply_smote_data(self):
@@ -278,7 +286,9 @@ if authentication_status == True:
         #     label_object = LabelEncoder()
         #     data_p_object.data[col]=label_object.fit_transform(data_p_object.data[col])
         # #     label_encoder_objects[col+"_encoder_object"] = label_object'''
-        data_p_object.encode_categorical_columns()
+        lablevalu = data_p_object.encode_categorical_columns()
+        
+        st.write(lablevalu)
         st.write(data_p_object.data.head())
         # data_p_object.objects['Label_Encoder'] = label_encoder_objects
         if(st.checkbox("Do you want to preprocess your data?")):
@@ -664,7 +674,14 @@ if authentication_status == True:
                     feature.append(v)
                 # if type(self.prediction_array)==np.ndarray:
                 model_obj.model_evaluvation_dict['prediction']=model_obj.best_model['model_obj'].predict(np.array([feature]))[0]
-                st.write(model_obj.model_evaluvation_dict)
+                st.write(int(model_obj.model_evaluvation_dict['prediction']))
+                outval = int(model_obj.model_evaluvation_dict['prediction'])
+                # ans = lablevalu[outval]
+                
+                for name, age in lablevalu.items():
+                    if str(age) == str(outval):
+                        final = name
+                st.write("The final outcome: ",final)
 
             #"""i have to add code for taking input of columns with object """
     #########################################################################################################################################################################
@@ -842,5 +859,27 @@ if authentication_status == True:
 
                 valuess= pd.DataFrame(score, columns = ['model','best_params','best_score'])
                 st.write(valuess)
+            classify = st.selectbox("Do you want to predict any sample's output? ",("No","Yes"))
+            if classify == "Yes":
+                # predict_models = st.multiselect("Select the regression models you want to predict with: ",('LinearRegression', 'Ridge', 'Lasso',"DecisionTreeRegressor","RandomForestRegressor","KNeighborsRegressor"))
+                # st.write(data_p_object.features)
+                categories = data_p_object.features
+                prediction_array={}
+                feature = []
+                for value in categories:
+                    # st.write("enter value for ",value)
+                    # num = st.text_input('exter the value of')
+                    prediction_array[value]=None
+                for k,v in prediction_array.items():
+                    prediction_array[k]=st.number_input(k,v)
+                # st.write(prediction_array)
+                for k,v in prediction_array.items():
+                    feature.append(v)
+                st.write(feature)
+                # if type(self.prediction_array)==np.ndarray:
+                model_obj_classification.model_evaluvation_dict['prediction']=model_obj_classification.best_model['Model_obj'].predict(np.array([feature]))[0]
+                # model_obj_classification.model_evaluvation_dict['prediction']=model_obj_classification.best_model['Model_obj'].predict(np.array([feature]))[0]
+                st.write(model_obj_classification.model_evaluvation_dict)
+
         # else:
         #   st.info("Please upload a dataset to continue")
