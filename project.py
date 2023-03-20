@@ -742,8 +742,8 @@ if authentication_status == True:
             for model in model_obj_classification.model_evaluvation_dict:
                 if model!='prediction':
                     del model_obj_classification.model_evaluvation_dict[model]['model_object']
-            model_obj_classification.best_model_object = model_obj_classification.best_model['Model_obj']
-            del model_obj_classification.best_model['Model_obj']
+            # model_obj_classification.best_model_object = model_obj_classification.best_model['Model_obj']
+            # del model_obj_classification.best_model['Model_obj']
             model_obj_classification.model_evaluvation_dict['best model'] = model_obj_classification.best_model
             review_classification =  model_obj_classification.model_evaluvation_dict
             
@@ -864,16 +864,16 @@ if authentication_status == True:
                 # predict_models = st.multiselect("Select the regression models you want to predict with: ",('LinearRegression', 'Ridge', 'Lasso',"DecisionTreeRegressor","RandomForestRegressor","KNeighborsRegressor"))
                 # st.write(data_p_object.features)
                 categories = data_p_object.features
-                prediction_array={}
+                predict_array={}
                 feature = []
                 for value in categories:
                     # st.write("enter value for ",value)
                     # num = st.text_input('exter the value of')
-                    prediction_array[value]=None
-                for k,v in prediction_array.items():
-                    prediction_array[k]=st.number_input(k,v)
+                    predict_array[value]=None
+                for key,val in predict_array.items():
+                    predict_array[key]=st.number_input(key,val)
                 # st.write(prediction_array)
-                for k,v in prediction_array.items():
+                for k,v in predict_array.items():
                     feature.append(v)
                 st.write(feature)
                 # if type(self.prediction_array)==np.ndarray:
