@@ -947,11 +947,17 @@ if LOGGED_IN == True:
                    if uploaded_file is not None:
                         # Can be used wherever a "file-like" object is accepted:
                         dataframe = pd.read_csv(uploaded_file)
+                        pred_val = []
                         # st.write(dataframe.head())
                         data_to_predict = dataframe[list(data_p_object.features)]
                         # st.write(data_to_predict.shape[0])
                         for i in range (0,data_to_predict.shape[0]):
-                            st.write(data_to_predict.iloc[i])
+                            model_obj_classification.model_evaluvation_dict['prediction']=model_obj_classification.best_model['Model_obj'].predict(np.array([data_to_predict.iloc[i]]))[0]
+                            class_pred = model_obj_classification.model_evaluvation_dict['prediction']
+                            pred_val.append(class_pred)
+                            # st.write(data_to_predict.iloc[i])
+                        data_to_predict["Predicted values"]=pred_val
+                        st.write(data_to_predict)
 
 
                 if type_input == "Individual value":
