@@ -20,40 +20,28 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
+import streamlit as st
+from streamlit_login_auth_ui.widgets import __login__
+import math
+
+#use predict_proba
+#divide the page into different sets: preprocessing, visualisation & prediction
+#display the best values in 
+#create a input for accpeting a test dataset and give output values for all the orws
 
 
-names = ["Adarak Baba","Ram Babu"]
-usernames = ["adarak","ram"]
 
-file_path = Path(__file__).parent / "hashed_pw.pkl"
-with file_path.open("rb") as file:
-    hashed_passwords = pickle.load(file)
+__login__obj = __login__(auth_token = "courier_auth_token", 
+                    company_name = "Shims",
+                    width = 200, height = 250, 
+                    logout_button_name = 'Logout', hide_menu_bool = False, 
+                    hide_footer_bool = False, 
+                    lottie_url = 'https://assets2.lottiefiles.com/packages/lf20_jcikwtux.json')
 
-credentials = {
-        "usernames":{
-            usernames[0]:{
-                "name":names[0],
-                "password":hashed_passwords[0]
-                },
-            usernames[1]:{
-                "name":names[1],
-                "password":hashed_passwords[1]
-                }            
-            }
-        }
+LOGGED_IN = __login__obj.build_login_ui()
 
-authenticator = stauth.Authenticate(credentials,"no_code_ml","tejovk",cookie_expiry_days=365)
-name, authentication_status, username = authenticator.login("Login","main")
-
-if authentication_status == False:
-    st.error("Either username/password is incorrect")
-if authentication_status == None:
-    st.warning("Please enter a username and password to continue using the page")
-if authentication_status == True:
-    col1,col2 = st.columns(2)
-    st.sidebar.write(":red[Welcome]",name)
-    authenticator.logout("Logout","sidebar")
-
+if LOGGED_IN == True:
+    tab1, tab2,tab3 = st.tabs(["Preprocess","Apply Regression","Apply  Classification"])
     class DataPreprocessing:
         def __init__(self,data):
             self.data = data
@@ -109,6 +97,7 @@ if authentication_status == True:
             from sklearn.preprocessing import LabelEncoder
             label_encoder_objects ={}
             edit_columns = self.get_object_column()
+            # st.write(edit_columns)
             name_mapping = {}
             for col in edit_columns:
                 label_object = LabelEncoder()
@@ -116,11 +105,11 @@ if authentication_status == True:
                 self.data[col]=label_object.fit_transform(self.data[col])
                 label_encoder_objects[col+"_encoder_object"] = label_object
             self.objects['Label_Encoder'] = label_encoder_objects
-            val = label_object.classes_
-            for i in val:
-                mapped_val = int(label_object.transform(list(i)))
-                name_mapping[i] = mapped_val
-            return name_mapping
+            # val = label_object.classes_
+            # for i in val:
+            #     mapped_val = int(label_object.transform(list(i)))
+            #     name_mapping[i] = mapped_val
+            # return name_mapping
         def change_columns(self,columns):
             self.data = self.data[columns]
         def apply_smote_data(self):
@@ -264,58 +253,38 @@ if authentication_status == True:
 
 
 
-
-    uploaded_file = st.file_uploader("Enter the dataset you want to work on: ")
-    if uploaded_file is not None:
-        # Can be used wherever a "file-like" object is accepted:
-        dataframe = pd.read_csv(uploaded_file)
-        st.write(dataframe.head(5))
-        data_p_object = DataPreprocessing(dataframe)
-        from sklearn.preprocessing import LabelEncoder
-        label_encoder_objects ={}
-        # st.write(data_p_object.features)
-        # st.write(data_p_object.data['diagnosis'].dtype)
-        edit_col = [i for i in dataframe.columns if data_p_object.data[i].dtype == np.object_]
-        edit_columns = edit_col
-        # st.write(edit_col)
-        if edit_col is None:
-            st.error("The Dataset does'nt contain any categorical columns")
-        if edit_col is not None:
-            st.info("We found textual data in your dataset, thus we encoded it")
-        # '''for col in edit_columns:
-        #     label_object = LabelEncoder()
-        #     data_p_object.data[col]=label_object.fit_transform(data_p_object.data[col])
-        # #     label_encoder_objects[col+"_encoder_object"] = label_object'''
-        lablevalu = data_p_object.encode_categorical_columns()
-        
-        st.write(lablevalu)
-        st.write(data_p_object.data.head())
-        # data_p_object.objects['Label_Encoder'] = label_encoder_objects
-        if(st.checkbox("Do you want to preprocess your data?")):
+    with tab1:
+        uploaded_file = st.file_uploader("Enter the dataset you want to work on: ")
+        if uploaded_file is not None:
+            # Can be used wherever a "file-like" object is accepted:
+            dataframe = pd.read_csv(uploaded_file)
+            st.write(dataframe.head(5))
+            data_p_object = DataPreprocessing(dataframe)
+            from sklearn.preprocessing import LabelEncoder
+            label_encoder_objects ={}
+            # st.write(data_p_object.features)
+            # st.write(data_p_object.data['diagnosis'].dtype)
+            edit_col = [i for i in dataframe.columns if data_p_object.data[i].dtype == np.object_]
+            edit_columns = edit_col
+            # st.write(edit_col)
+            if edit_col is None:
+                st.error("The Dataset does'nt contain any categorical columns")
+            if edit_col is not None:
+                st.info("We found textual data in your dataset, thus we encoded it")
+            # '''for col in edit_columns:
+            #     label_object = LabelEncoder()
+            #     data_p_object.data[col]=label_object.fit_transform(data_p_object.data[col])
+            # #     label_encoder_objects[col+"_encoder_object"] = label_object'''
+            # global lablevalu
+            lablevalu = data_p_object.encode_categorical_columns()
             
-            # data_p_object = pd.DataFrame(data_p_object)
-            st.write("The correlation matrix for your dataset:")
-            corr = data_p_object.data.corr()
-            mask = np.ones_like(corr,dtype=np.bool_)
-            mask[np.tril_indices_from(mask)]=False
-            mask[np.diag_indices_from(mask)]=True
-            fig,axes = plt.subplots(nrows=1,ncols=1,figsize=(25,25))
-            sns.heatmap(corr,annot=True,mask=mask,ax=axes,annot_kws={'fontsize':8},cbar=False,cmap='ocean_r')
-            axes.set_title('\n Correlation Matrix for the dataset\n')
-            st.write(fig)
-
-            col_names = dataframe.columns
-            col_to_remove = st.multiselect("Select the columns you want to remove: ",col_names)
-            if col_to_remove is None:
-                None
-            if col_to_remove is not None:
-                data_p_object.data.drop(col_to_remove,axis=1,inplace=True)
-                if type(col_to_remove) == list:
-                    data_p_object.features = [i for i in data_p_object.features if i not in col_to_remove]
-                else:
-                    data_p_object.features.remove(col_to_remove)
-
-                st.write("The new correlation matrix for your dataset:")
+            # st.write(lablevalu)
+            # st.write(data_p_object.data.head())
+            # data_p_object.objects['Label_Encoder'] = label_encoder_objects
+            if(st.checkbox("Do you want to preprocess your data?")):
+                
+                # data_p_object = pd.DataFrame(data_p_object)
+                st.write("The correlation matrix for your dataset:")
                 corr = data_p_object.data.corr()
                 mask = np.ones_like(corr,dtype=np.bool_)
                 mask[np.tril_indices_from(mask)]=False
@@ -325,368 +294,475 @@ if authentication_status == True:
                 axes.set_title('\n Correlation Matrix for the dataset\n')
                 st.write(fig)
 
+                col_names = dataframe.columns
+                col_to_remove = st.multiselect("Select the columns you want to remove: ",col_names)
+                if col_to_remove is None:
+                    None
+                if col_to_remove is not None:
+                    data_p_object.data.drop(col_to_remove,axis=1,inplace=True)
+                    if type(col_to_remove) == list:
+                        data_p_object.features = [i for i in data_p_object.features if i not in col_to_remove]
+                    else:
+                        data_p_object.features.remove(col_to_remove)
+
+                    st.write("The new correlation matrix for your dataset:")
+                    corr = data_p_object.data.corr()
+                    mask = np.ones_like(corr,dtype=np.bool_)
+                    mask[np.tril_indices_from(mask)]=False
+                    mask[np.diag_indices_from(mask)]=True
+                    fig,axes = plt.subplots(nrows=1,ncols=1,figsize=(25,25))
+                    sns.heatmap(corr,annot=True,mask=mask,ax=axes,annot_kws={'fontsize':8},cbar=False,cmap='ocean_r')
+                    axes.set_title('\n Correlation Matrix for the dataset\n')
+                    st.write(fig)
+                    # st.write(data_p_object.features)
 
 
-            null_val=st.selectbox("How would you like to handle you null data: ", ("drop them","replace with mean"))
-            if(null_val=="drop them"):
-                data_p_object.data.dropna(axis=0,inplace=True)
-            else:
-                data_p_object.data=data_p_object.data.apply(lambda x:x.fillna(x.mean()))
-            
+                outliers = st.checkbox("Do you want to handel outliers in your data set? ")
+                if outliers==True:
+                    lis_for_target = data_p_object.features
+                    to_find = st.multiselect("Select the features for outlier handeling: ", list(lis_for_target))
+                    to_do = st.selectbox("Do you want to view the outliers or do you want to delete the outliers? ",("View","Handel"))
+                    out_graph={}
+                    if to_do == "View":
+                        for item in to_find:
+                            # plt.boxplot(list(float(to_find)))
+                            fig,axes = plt.subplots(nrows=math.ceil(len(to_find)/2),ncols=2, sharey=False)
+                            plt.boxplot(data_p_object.data[item])
+                            st.write(fig)
+                    if to_do == "Handel":
+                        options = st.selectbox("What do you want to perform on the outliers? ",("Capping","Median Substitution","Deletion"))
+                        if options == "Capping":
+                            low=st.number_input("Enter the lower threshold percentile: ",1,100)
+                            up=st.number_input("Enter the upper threshold percentile: ",1,100)
+                            st.caption("Generally lower threshold of 10 and upper threshold of 90 are preferred")
+                            for item in to_find:
+                                # st.write(data_p_object.data[item])
+                                fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))#a matplotlib function to plot multiple plots in different graphs sdjecent to each other.
+                                st.write(item)
+                                ax1.boxplot(data_p_object.data[item])
+                                ax1.set_title('Data before capping')
+                                low_threshold = np.percentile(data_p_object.data[item],low)#lower threshold
+                                up_threshold = np.percentile(data_p_object.data[item],up)#upper threshold
+                                capped_data = np.clip(data_p_object.data[item], low_threshold, up_threshold)#a simple numpy function to replace the outlier values with corresponding values.
+                                data_p_object.data[item] = capped_data
+                                # st.write(data_p_object.data[item])
+                                # Plot the boxplots on the subplots                      
+                                ax2.boxplot(capped_data)
+                                ax2.set_title('Data after capping')
 
-            st.table(data_p_object.data.isnull().any())
-            
-            lis_for_target = data_p_object.features
-            target = st.selectbox("Select the target Variable: ",list(lis_for_target))
-            if target is not None:
-                try:
-                    data_p_object.input =  data_p_object.data.drop(target,axis=1)
-                    data_p_object.output = data_p_object.data[target]
-                    data_p_object.features.remove(target)
-                    data_p_object.output_name = target
-                except:
-                    st.error("Please enter a valid target variable")
-            
+                                # Show the plot
+                                plt.show()
+                                st.write(fig)
+                        if options == "Median Substitution":
+                            for item in to_find:
+                                # data_p_object.data[item]
+                                fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
+                                st.write(item)
+                                ax1.boxplot(data_p_object.data[item])
+                                ax1.set_title('Data before replacing')
+                                median=data_p_object.data[item].median()
+                                data_p_object.data[item] = np.where( data_p_object.data[item] >90, median,data_p_object.data[item])
+                                ax2.boxplot(data_p_object.data[item])
+                                ax2.set_title('Data after replacing')
+                                plt.show()
+                                st.write(fig)
 
-            tst_percent = st.text_input("Enter the testing percentage","0.2")
-            st.caption("an optimal value will be between 20-30%")
-            data_p_object.split(float(tst_percent),validation_percent=0.1,rs=42)
-            st.write("Dimensions of the training data: ",data_p_object.train_features.shape)
-            st.write("Dimensions of the testing data: ",data_p_object.test_features.shape)
-            st.write("Dimensions of the validation data: ",data_p_object.val_features.shape)
-            st.caption("Countvectorizer: Helps transform textual data to matrix type, use this if you have random text in your dataset, make sure the data of that column is non categorical")
-            st.caption("Encode Categoricalcolumns: If your datat has categorical columns, this function will convert it to numbers that represent categories this helps reduce errors while training the model.")
-            st.caption("SMOT: Synthetic Minority Oversampling Technique is a statistical technique for increasing the number of cases in your dataset in a balanced way.")
-            wut_to_do = st.multiselect("What all preprocessing you want on your data set?",("Apply countvectorizer","Encode categorical columns","Apply SMOTE","Standardize","Normalize"))
+                        # if options == "Deletion":
 
-            if "Apply countvectorizer" in wut_to_do:
-                to_vectorize = st.text_input("Enter the column which you want to vectorize: ")
-                if to_vectorize is not None:
+
+
+
+
+                null_val=st.selectbox("How would you like to handle you null data: ", ("drop them","replace with mean"))
+                if(null_val=="drop them"):
+                    data_p_object.data.dropna(axis=0,inplace=True)
+                else:
+                    data_p_object.data=data_p_object.data.apply(lambda x:x.fillna(x.mean()))
+                
+
+                st.table(data_p_object.data.isnull().any())
+                
+                lis_for_target = data_p_object.features
+                target = st.selectbox("Select the target Variable: ",list(lis_for_target))
+                if target is not None:
                     try:
-                        from sklearn.feature_extraction.text import CountVectorizer
-                        data_p_object.objects['Countvec_'+to_vectorize] = CountVectorizer()#instantiating the count vectorizer
-                        data_p_object.data[to_vectorize] = data_p_object.objects['Countvec_'+to_vectorize].fit_transform(data_p_object.data[to_vectorize])
+                        data_p_object.input =  data_p_object.data.drop(target,axis=1)
+                        data_p_object.output = data_p_object.data[target]
+                        data_p_object.features.remove(target)
+                        data_p_object.output_name = target
                     except:
-                        st.error("Please enter a valid column name")
-
-
-            if "Encode categorical columns" in wut_to_do:
+                        st.error("Please enter a valid target variable")
                 
-                from sklearn.preprocessing import LabelEncoder
-                label_encoder_objects ={}
-                # st.write(data_p_object.features)
-                # st.write(data_p_object.data['diagnosis'].dtype)
-                edit_col = [i for i in dataframe.columns if data_p_object.data[i].dtype == np.object_]
-                edit_columns = edit_col
-                # st.write(edit_col)
-                if edit_columns is None:
-                    st.error("The Dataset does'nt contain any categorical columns")
-                for col in edit_columns:
-                    label_object = LabelEncoder()
-                    data_p_object.data[col]=label_object.fit_transform(data_p_object.data[col])
-                    label_encoder_objects[col+"_encoder_object"] = label_object
-                data_p_object.objects['Label_Encoder'] = label_encoder_objects
-                
-            if "Apply SMOTE" in wut_to_do:
-                from imblearn.over_sampling import SMOTE
-                smote_object = SMOTE()
-                data_p_object.train_features,data_p_object.train_target = smote_object.fit_resample(data_p_object.train_features,data_p_object.train_target)
-                data_p_object.objects['Smote object'] = smote_object
 
-            if "Standardize" in wut_to_do:
-                from pandas import DataFrame as df
-                scale_object  = data_p_object.objects['Standard scaler']()
-                # st.write( data_p_object.shape())
-                data_p_object.train_features=df(data = scale_object.fit_transform(data_p_object.train_features),columns = data_p_object.features)
-                data_p_object.test_features = df(data = scale_object.fit_transform(data_p_object.test_features),columns = data_p_object.features)
-                data_p_object.val_features = df(data = scale_object.fit_transform(data_p_object.val_features),columns = data_p_object.features)
-            
-            if "Normalize" in wut_to_do:
-                from pandas import DataFrame as df
-                scale_object  = data_p_object.objects['Min Max Scalar']()
-                data_p_object.train_features=df(data = scale_object.fit_transform(data_p_object.train_features),columns = data_p_object.features)
-                data_p_object.test_features = df(data = scale_object.fit_transform(data_p_object.test_features),columns = data_p_object.features)
-                data_p_object.val_features = df(data = scale_object.fit_transform(data_p_object.val_features),columns = data_p_object.features)
-            
-            st.write(":partying_face: WOILAAA you have finished the first step i.e., preprocessing :partying_face:")
+                tst_percent = st.text_input("Enter the testing percentage","0.2")
+                st.caption("an optimal value will be between 20-30%")
+                data_p_object.split(float(tst_percent),validation_percent=0.1,rs=42)
+                st.write("Dimensions of the training data: ",data_p_object.train_features.shape)
+                st.write("Dimensions of the testing data: ",data_p_object.test_features.shape)
+                st.write("Dimensions of the validation data: ",data_p_object.val_features.shape)
+                st.caption("Countvectorizer: Helps transform textual data to matrix type, use this if you have random text in your dataset, make sure the data of that column is non categorical")
+                st.caption("Encode Categoricalcolumns: If your datat has categorical columns, this function will convert it to numbers that represent categories this helps reduce errors while training the model.")
+                st.caption("SMOT: Synthetic Minority Oversampling Technique is a statistical technique for increasing the number of cases in your dataset in a balanced way.")
+                wut_to_do = st.multiselect("What all preprocessing you want on your data set?",("Apply countvectorizer","Encode categorical columns","Apply SMOTE","Standardize","Normalize"))
+
+                if "Apply countvectorizer" in wut_to_do:
+                    to_vectorize = st.text_input("Enter the column which you want to vectorize: ")
+                    if to_vectorize is not None:
+                        try:
+                            from sklearn.feature_extraction.text import CountVectorizer
+                            data_p_object.objects['Countvec_'+to_vectorize] = CountVectorizer()#instantiating the count vectorizer
+                            data_p_object.data[to_vectorize] = data_p_object.objects['Countvec_'+to_vectorize].fit_transform(data_p_object.data[to_vectorize])
+                        except:
+                            st.error("Please enter a valid column name")
+
+
+                if "Encode categorical columns" in wut_to_do:
+                    
+                    from sklearn.preprocessing import LabelEncoder
+                    label_encoder_objects ={}
+                    # st.write(data_p_object.features)
+                    # st.write(data_p_object.data['diagnosis'].dtype)
+                    edit_col = [i for i in dataframe.columns if data_p_object.data[i].dtype == np.object_]
+                    edit_columns = edit_col
+                    # st.write(edit_col)
+                    if edit_columns is None:
+                        st.error("The Dataset does'nt contain any categorical columns")
+                    for col in edit_columns:
+                        label_object = LabelEncoder()
+                        data_p_object.data[col]=label_object.fit_transform(data_p_object.data[col])
+                        label_encoder_objects[col+"_encoder_object"] = label_object
+                    data_p_object.objects['Label_Encoder'] = label_encoder_objects
+                    
+                if "Apply SMOTE" in wut_to_do:
+                    from imblearn.over_sampling import SMOTE
+                    smote_object = SMOTE()
+                    data_p_object.train_features,data_p_object.train_target = smote_object.fit_resample(data_p_object.train_features,data_p_object.train_target)
+                    data_p_object.objects['Smote object'] = smote_object
+
+                if "Standardize" in wut_to_do:
+                    from pandas import DataFrame as df
+                    scale_object  = data_p_object.objects['Standard scaler']()
+                    # st.write( data_p_object.shape())
+                    data_p_object.train_features=df(data = scale_object.fit_transform(data_p_object.train_features),columns = data_p_object.features)
+                    data_p_object.test_features = df(data = scale_object.fit_transform(data_p_object.test_features),columns = data_p_object.features)
+                    data_p_object.val_features = df(data = scale_object.fit_transform(data_p_object.val_features),columns = data_p_object.features)
+                
+                if "Normalize" in wut_to_do:
+                    from pandas import DataFrame as df
+                    scale_object  = data_p_object.objects['Min Max Scalar']()
+                    data_p_object.train_features=df(data = scale_object.fit_transform(data_p_object.train_features),columns = data_p_object.features)
+                    data_p_object.test_features = df(data = scale_object.fit_transform(data_p_object.test_features),columns = data_p_object.features)
+                    data_p_object.val_features = df(data = scale_object.fit_transform(data_p_object.val_features),columns = data_p_object.features)
+                
+                st.write(":partying_face: WOILAAA you have finished the first step i.e., preprocessing :partying_face:")
 
     #########################################################################################################################################################################
     #REGRESSION
+    with tab2:
         if(st.checkbox("Do you want to perform regression on your data set?")):
-            model_obj = MachineLearningRegression(data_p_object)
-            for model,dic in model_obj.model_evaluvation_dict.items():
-                model_obj.model_evaluvation_dict[model]['model_object'].fit(model_obj.train_features,model_obj.train_target)
-                model_obj.trained_models.append(model_obj.model_evaluvation_dict[model]['model_object'])
-                model_obj.model_prediction[model] = model_obj.model_evaluvation_dict[model]['model_object'].predict(model_obj.test_features)
+                # lis_for_target = data_p_object.features
+                # target = st.selectbox("Select the target Variable : ",list(lis_for_target))
+                # if target is not None:
+                #     try:
+                #         data_p_object.input =  data_p_object.data.drop(target,axis=1)
+                #         data_p_object.output = data_p_object.data[target]
+                #         data_p_object.features.remove(target)
+                #         data_p_object.output_name = target
+                #     except:
+                #         st.error("Please enter a valid target variable")
+                
+
+                # tst_percent = st.text_input("Enter the testing percentage","0.2")
+                # st.caption("an optimal value will be between 20-30%")
+                # data_p_object.split(float(tst_percent),validation_percent=0.1,rs=42)
+                # st.write("Dimensions of the training data: ",data_p_object.train_features.shape)
+                # st.write("Dimensions of the testing data: ",data_p_object.test_features.shape)
+                # st.write("Dimensions of the validation data: ",data_p_object.val_features.shape)
+                model_obj = MachineLearningRegression(data_p_object)
+                for model,dic in model_obj.model_evaluvation_dict.items():
+                    model_obj.model_evaluvation_dict[model]['model_object'].fit(model_obj.train_features,model_obj.train_target)
+                    model_obj.trained_models.append(model_obj.model_evaluvation_dict[model]['model_object'])
+                    model_obj.model_prediction[model] = model_obj.model_evaluvation_dict[model]['model_object'].predict(model_obj.test_features)
+                
+                from sklearn.metrics import r2_score,mean_absolute_error,mean_squared_error,mean_absolute_percentage_error
+                metrics = {'r2 score':r2_score,'MAE':mean_absolute_error,'MSE':mean_squared_error,'MAPE':mean_absolute_percentage_error}
+                for model,dic in model_obj.model_evaluvation_dict.items():
+                    for metric,obj in metrics.items():
+                        model_obj.model_evaluvation_dict[model][metric] = obj(model_obj.model_prediction[model],model_obj.test_target)
+                        if model_obj.model_evaluvation_dict[model]['r2 score']>model_obj.best_r2_score:
+                            model_obj.best_model = {'Name':model,
+                                            'r2 score':model_obj.model_evaluvation_dict[model]['r2 score'],
+                                                'model_obj':model_obj.model_evaluvation_dict[model]['model_object']}
+                            model_obj.best_r2_score = model_obj.model_evaluvation_dict[model]['r2 score']
             
-            from sklearn.metrics import r2_score,mean_absolute_error,mean_squared_error,mean_absolute_percentage_error
-            metrics = {'r2 score':r2_score,'MAE':mean_absolute_error,'MSE':mean_squared_error,'MAPE':mean_absolute_percentage_error}
-            for model,dic in model_obj.model_evaluvation_dict.items():
-                for metric,obj in metrics.items():
-                    model_obj.model_evaluvation_dict[model][metric] = obj(model_obj.model_prediction[model],model_obj.test_target)
-                    if model_obj.model_evaluvation_dict[model]['r2 score']>model_obj.best_r2_score:
-                        model_obj.best_model = {'Name':model,
-                                        'r2 score':model_obj.model_evaluvation_dict[model]['r2 score'],
-                                            'model_obj':model_obj.model_evaluvation_dict[model]['model_object']}
-                        model_obj.best_r2_score = model_obj.model_evaluvation_dict[model]['r2 score']
-        
-            # model_obj.fit()
-            # model_obj.Score_test_dataset()
-            if type(model_obj.prediction_array)==np.ndarray:
-                model_obj.model_evaluvation_dict['prediction']=model_obj.best_model['model_obj'].predict(np.array([model_obj.prediction_array]))[0]
-            for model in model_obj.model_evaluvation_dict:
-                if model!='prediction':
-                    del model_obj.model_evaluvation_dict[model]['model_object']
-            # model_obj.best_model_object = model_obj.best_model['model_obj']
-            # del model_obj.best_model['model_obj']
-            model_obj.model_evaluvation_dict['best model'] = model_obj.best_model
-            
-            review = model_obj.model_evaluvation_dict
-            # st.write(review) 
-            
-            st.caption("Models that we have:")
-            st.caption("LinearRegression")
-            st.caption("Ridge")
-            st.caption("Lasso")
-            st.caption("DecisionTreeRegressor")
-            st.caption("RandomForestRegressor")
-            st.caption("KNeighborsRegressor")
-            choise = st.selectbox("What regression model do you want :", ("All","Select a few","Best"))
-            if choise == "All":
-                analyse = st.selectbox("How would you like to analyse the results? ",("Numerically","Graphically"))
-                if analyse == "Numerically":
-                    to_check = review['best model']['Name']
-                    # st.text(to_check)
-                    for model_name,metrik in review.items():
-                        st.header(model_name)
-                        for param,value in metrik.items():
-                            if model_name == "best model":
-                                if param == "r2 score":
-                                    st.write(param,":",round(value,3))
+                # model_obj.fit()
+                # model_obj.Score_test_dataset()
+                if type(model_obj.prediction_array)==np.ndarray:
+                    model_obj.model_evaluvation_dict['prediction']=model_obj.best_model['model_obj'].predict(np.array([model_obj.prediction_array]))[0]
+                for model in model_obj.model_evaluvation_dict:
+                    if model!='prediction':
+                        del model_obj.model_evaluvation_dict[model]['model_object']
+                # model_obj.best_model_object = model_obj.best_model['model_obj']
+                # del model_obj.best_model['model_obj']
+                model_obj.model_evaluvation_dict['best model'] = model_obj.best_model
+                
+                review = model_obj.model_evaluvation_dict
+                # st.write(review) 
+                
+                st.caption("Models that we have:")
+                st.caption("LinearRegression")
+                st.caption("Ridge")
+                st.caption("Lasso")
+                st.caption("DecisionTreeRegressor")
+                st.caption("RandomForestRegressor")
+                st.caption("KNeighborsRegressor")
+                choise = st.selectbox("What regression model do you want :", ("All","Select a few","Best"))
+                if choise == "All":
+                    analyse = st.selectbox("How would you like to analyse the results? ",("Numerically","Graphically"))
+                    if analyse == "Numerically":
+                        to_check = review['best model']['Name']
+                        # st.text(to_check)
+                        for model_name,metrik in review.items():
+                            st.header(model_name)
+                            for param,value in metrik.items():
+                                if model_name == "best model":
+                                    if param == "r2 score":
+                                        st.write(param,":",round(value,3))
+                                    else:
+                                        st.write(param,":",value)
                                 else:
-                                    st.write(param,":",value)
-                            else:
-                                st.write(param,":",round(value,3))
-                            
+                                    st.write(param,":",round(value,3))
+                                
 
-                if analyse == "Graphically":
-                    r2_score_list,MSE_list,MAE_list,MAPE_list={},{},{},{}
-                    for model in review:
-                        if model!='best model':
-                            r2_score_list[model] = round(review[model]['r2 score'],2)
-                            MSE_list[model] = round(review[model]['MSE'],2)
-                            MAE_list[model] = round(review[model]['MAE'],2)
-                            MAPE_list[model] = round(review[model]['MAPE'],2)
-                    # group_labels = ['LinearRegression', 'Ridge', 'Lasso',"DecisionTreeRegressor","RandomForestRegressor","KNeighborsRegressor"]
-                    fig,axes = plt.subplots(nrows=2,ncols=2,figsize=(35,45))
-                    # Figure 
-                    a = sns.barplot(x=list(r2_score_list.keys()),y=list(r2_score_list.values()),ax=axes[0][0])
-                    a.set_title("R2 SCORE PLOT\n",fontsize=20)
-                    a.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
-                    for size in a.containers:
-                        a.bar_label(size,fontsize=15)
+                    if analyse == "Graphically":
+                        r2_score_list,MSE_list,MAE_list,MAPE_list={},{},{},{}
+                        for model in review:
+                            if model!='best model':
+                                r2_score_list[model] = round(review[model]['r2 score'],2)
+                                MSE_list[model] = round(review[model]['MSE'],2)
+                                MAE_list[model] = round(review[model]['MAE'],2)
+                                MAPE_list[model] = round(review[model]['MAPE'],2)
+                        # group_labels = ['LinearRegression', 'Ridge', 'Lasso',"DecisionTreeRegressor","RandomForestRegressor","KNeighborsRegressor"]
+                        fig,axes = plt.subplots(nrows=2,ncols=2,figsize=(35,45))
+                        # Figure 
+                        a = sns.barplot(x=list(r2_score_list.keys()),y=list(r2_score_list.values()),ax=axes[0][0])
+                        a.set_title("R2 SCORE PLOT\n",fontsize=20)
+                        a.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                        for size in a.containers:
+                            a.bar_label(size,fontsize=15)
 
-                    # Figure 
-                    b = sns.barplot(x=list(MSE_list.keys()),y=list(MSE_list.values()),ax=axes[0][1])
-                    b.set_title("MSE PLOT\n",fontsize=20)
-                    b.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
-                    for size in b.containers:
-                        b.bar_label(size,fontsize=15)
+                        # Figure 
+                        b = sns.barplot(x=list(MSE_list.keys()),y=list(MSE_list.values()),ax=axes[0][1])
+                        b.set_title("MSE PLOT\n",fontsize=20)
+                        b.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                        for size in b.containers:
+                            b.bar_label(size,fontsize=15)
 
-                    # Figure 
-                    c = sns.barplot(x=list(MAE_list.keys()),y=list(MAE_list.values()),ax=axes[1][0])
-                    c.set_title("MAE PLOT\n",fontsize=20)
-                    c.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
-                    for size in c.containers:
-                        c.bar_label(size,fontsize=15)
+                        # Figure 
+                        c = sns.barplot(x=list(MAE_list.keys()),y=list(MAE_list.values()),ax=axes[1][0])
+                        c.set_title("MAE PLOT\n",fontsize=20)
+                        c.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                        for size in c.containers:
+                            c.bar_label(size,fontsize=15)
 
-                    # Figure 
-                    d = sns.barplot(x=list(MAPE_list.keys()),y=list(MAPE_list.values()),ax=axes[1][1])
-                    d.set_title("MAPE PLOT\n",fontsize=20)
-                    d.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
-                    for size in d.containers:
-                        d.bar_label(size,fontsize=15)
+                        # Figure 
+                        d = sns.barplot(x=list(MAPE_list.keys()),y=list(MAPE_list.values()),ax=axes[1][1])
+                        d.set_title("MAPE PLOT\n",fontsize=20)
+                        d.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                        for size in d.containers:
+                            d.bar_label(size,fontsize=15)
+                        st.write(fig)
+
+                if choise=="Best":
+                    best_model = review['best model']['Name']
+                    analyse = st.selectbox("How would you like to analyse the results? ",("Numerically","Graphically"))
+                    if analyse == "Numerically":
+                        for model_name,metrik in review.items():
+                            if model_name==best_model:
+                                st.header(model_name)
+                                for param,value in metrik.items():
+                                    st.write(param,":",round(value,3))
+                    
+                    if analyse == "Graphically":
+                        r2_score_list,MSE_list,MAE_list,MAPE_list={},{},{},{}
+                        for model in review:
+                            if model == best_model :
+                                r2_score_list[model] = round(review[model]['r2 score'],3)
+                                MSE_list[model] = round(review[model]['MSE'],3)
+                                MAE_list[model] = round(review[model]['MAE'],3)
+                                MAPE_list[model] = round(review[model]['MAPE'],3)
+                        # group_labels = ['LinearRegression', 'Ridge', 'Lasso',"DecisionTreeRegressor","RandomForestRegressor","KNeighborsRegressor"]
+                        fig,axes = plt.subplots(nrows=2,ncols=2,figsize=(35,45))
+                        # Figure 
+                        a = sns.barplot(x=list(r2_score_list.keys()),y=list(r2_score_list.values()),ax=axes[0][0])
+                        a.set_title("R2 SCORE PLOT\n",fontsize=20)
+                        a.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                        for size in a.containers:
+                            a.bar_label(size,fontsize=15)
+
+                        # Figure 
+                        b = sns.barplot(x=list(MSE_list.keys()),y=list(MSE_list.values()),ax=axes[0][1])
+                        b.set_title("MSE PLOT\n",fontsize=20)
+                        b.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                        for size in b.containers:
+                            b.bar_label(size,fontsize=15)
+
+                        # Figure 
+                        c = sns.barplot(x=list(MAE_list.keys()),y=list(MAE_list.values()),ax=axes[1][0])
+                        c.set_title("MAE PLOT\n",fontsize=20)
+                        c.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                        for size in c.containers:
+                            c.bar_label(size,fontsize=15)
+
+                        # Figure 
+                        d = sns.barplot(x=list(MAPE_list.keys()),y=list(MAPE_list.values()),ax=axes[1][1])
+                        d.set_title("MAPE PLOT\n",fontsize=20)
+                        d.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                        for size in d.containers:
+                            d.bar_label(size,fontsize=15)
+                        st.write(fig)
+                if choise=="Select a few":
+                    best_model = review['best model']['Name']
+                    model_selected = st.multiselect("Select the models you want to work with:",('LinearRegression', 'Ridge', 'Lasso','DecisionTreeRegressor','RandomForestRegressor','KNeighborsRegressor'))
+                    analyse = st.selectbox("How would you like to analyse the results? ",("Numerically","Graphically"))
+                    if best_model not in model_selected:
+                        st.warning("YOUR SELECTED MODELS DOES'NT INCLUDE THE BEST MODEL, YOU MIGHT WANT TO CONSIDER IT")
+                    
+                    if analyse == "Numerically":
+                        for model_name,metrik in review.items():
+                            if model_name in model_selected:
+                                st.header(model_name)
+                                for param,value in metrik.items():
+                                    st.write(param,":",round(value,3))
+                    
+                    if analyse == "Graphically":
+                        r2_score_list,MSE_list,MAE_list,MAPE_list={},{},{},{}
+                        for model in review:
+                            if model in model_selected :
+                                r2_score_list[model] = round(review[model]['r2 score'],3)
+                                MSE_list[model] = round(review[model]['MSE'],3)
+                                MAE_list[model] = round(review[model]['MAE'],3)
+                                MAPE_list[model] = round(review[model]['MAPE'],3)
+                        # group_labels = ['LinearRegression', 'Ridge', 'Lasso',"DecisionTreeRegressor","RandomForestRegressor","KNeighborsRegressor"]
+                        fig,axes = plt.subplots(nrows=2,ncols=2,figsize=(35,45))
+                        # Figure 
+                        a = sns.barplot(x=list(r2_score_list.keys()),y=list(r2_score_list.values()),ax=axes[0][0])
+                        a.set_title("R2 SCORE PLOT\n",fontsize=20)
+                        a.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                        for size in a.containers:
+                            a.bar_label(size,fontsize=15)
+
+                        # Figure 
+                        b = sns.barplot(x=list(MSE_list.keys()),y=list(MSE_list.values()),ax=axes[0][1])
+                        b.set_title("MSE PLOT\n",fontsize=20)
+                        b.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                        for size in b.containers:
+                            b.bar_label(size,fontsize=15)
+
+                        # Figure 
+                        c = sns.barplot(x=list(MAE_list.keys()),y=list(MAE_list.values()),ax=axes[1][0])
+                        c.set_title("MAE PLOT\n",fontsize=20)
+                        c.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                        for size in c.containers:
+                            c.bar_label(size,fontsize=15)
+
+                        # Figure 
+                        d = sns.barplot(x=list(MAPE_list.keys()),y=list(MAPE_list.values()),ax=axes[1][1])
+                        d.set_title("MAPE PLOT\n",fontsize=20)
+                        d.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
+                        for size in d.containers:
+                            d.bar_label(size,fontsize=15)
+                        st.write(fig)
+                validate = st.selectbox("Do you want to validate your model using validation data?",("No","Yes"))
+                if validate == "Yes":
+                    score_list={}
+                    for i in model_obj.trained_models:
+                        score_list[str(i).replace("()","")] = round(i.score(data_p_object.val_features,data_p_object.val_target),3)
+                    fig,axes = plt.subplots(figsize=(15,8))
+                    a = sns.barplot(x = list(score_list.keys()),y = list(score_list.values()),ax=axes)
+                    for i in a.containers:
+                        a.bar_label(i)
                     st.write(fig)
 
-            if choise=="Best":
-                best_model = review['best model']['Name']
-                analyse = st.selectbox("How would you like to analyse the results? ",("Numerically","Graphically"))
-                if analyse == "Numerically":
-                    for model_name,metrik in review.items():
-                        if model_name==best_model:
-                            st.header(model_name)
-                            for param,value in metrik.items():
-                                st.write(param,":",round(value,3))
-                
-                if analyse == "Graphically":
-                    r2_score_list,MSE_list,MAE_list,MAPE_list={},{},{},{}
-                    for model in review:
-                        if model == best_model :
-                            r2_score_list[model] = round(review[model]['r2 score'],3)
-                            MSE_list[model] = round(review[model]['MSE'],3)
-                            MAE_list[model] = round(review[model]['MAE'],3)
-                            MAPE_list[model] = round(review[model]['MAPE'],3)
-                    # group_labels = ['LinearRegression', 'Ridge', 'Lasso',"DecisionTreeRegressor","RandomForestRegressor","KNeighborsRegressor"]
-                    fig,axes = plt.subplots(nrows=2,ncols=2,figsize=(35,45))
-                    # Figure 
-                    a = sns.barplot(x=list(r2_score_list.keys()),y=list(r2_score_list.values()),ax=axes[0][0])
-                    a.set_title("R2 SCORE PLOT\n",fontsize=20)
-                    a.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
-                    for size in a.containers:
-                        a.bar_label(size,fontsize=15)
-
-                    # Figure 
-                    b = sns.barplot(x=list(MSE_list.keys()),y=list(MSE_list.values()),ax=axes[0][1])
-                    b.set_title("MSE PLOT\n",fontsize=20)
-                    b.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
-                    for size in b.containers:
-                        b.bar_label(size,fontsize=15)
-
-                    # Figure 
-                    c = sns.barplot(x=list(MAE_list.keys()),y=list(MAE_list.values()),ax=axes[1][0])
-                    c.set_title("MAE PLOT\n",fontsize=20)
-                    c.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
-                    for size in c.containers:
-                        c.bar_label(size,fontsize=15)
-
-                    # Figure 
-                    d = sns.barplot(x=list(MAPE_list.keys()),y=list(MAPE_list.values()),ax=axes[1][1])
-                    d.set_title("MAPE PLOT\n",fontsize=20)
-                    d.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
-                    for size in d.containers:
-                        d.bar_label(size,fontsize=15)
+                for_kfold = st.selectbox("Do you want to perform k-Fold to improve model accuracy?",("No","Yes"))
+                st.info("This can change the best model to some other model")
+                st.caption("This will take some time to process, since its itterative process")
+                if for_kfold == "Yes":
+                    fig,axes = plt.subplots(figsize=(14,2))
+                    splits = st.number_input("Enter a value of splits for k fold: ",10)
+                    kf = KFold(n_splits=splits)
+                    # from sklearn.linear_model import LinearRegression,Lasso
+                    models = [LinearRegression(),Lasso(),Ridge(),DecisionTreeRegressor(),RandomForestRegressor(),KNeighborsRegressor()]
+                    score_list = {'LinearRegression':[],'Lasso':[], 'Ridge':[],"DecisionTreeRegressor":[],"RandomForestRegressor":[],"KNeighborsRegressor":[]}
+                    for model in models:
+                        for train,test in kf.split(data_p_object.train_features,data_p_object.train_target):
+                            model.fit(data_p_object.train_features.iloc[train],data_p_object.train_target.iloc[train])
+                            score_list[str(model).replace("()","")].append(round(model.score(data_p_object.train_features.iloc[train],data_p_object.train_target.iloc[train]),3))
+                        score_list[str(model).replace("()","")] = max(score_list[str(model).replace("()","")])*100
+                    a = sns.barplot(y = list(score_list.keys()),x = list(score_list.values()),ax=axes)
+                    for i in a.containers:
+                        a.bar_label(i)
                     st.write(fig)
-            if choise=="Select a few":
-                best_model = review['best model']['Name']
-                model_selected = st.multiselect("Select the models you want to work with:",('LinearRegression', 'Ridge', 'Lasso','DecisionTreeRegressor','RandomForestRegressor','KNeighborsRegressor'))
-                analyse = st.selectbox("How would you like to analyse the results? ",("Numerically","Graphically"))
-                if best_model not in model_selected:
-                    st.warning("YOUR SELECTED MODELS DOES'NT INCLUDE THE BEST MODEL, YOU MIGHT WANT TO CONSIDER IT")
                 
-                if analyse == "Numerically":
-                    for model_name,metrik in review.items():
-                        if model_name in model_selected:
-                            st.header(model_name)
-                            for param,value in metrik.items():
-                                st.write(param,":",round(value,3))
-                
-                if analyse == "Graphically":
-                    r2_score_list,MSE_list,MAE_list,MAPE_list={},{},{},{}
-                    for model in review:
-                        if model in model_selected :
-                            r2_score_list[model] = round(review[model]['r2 score'],3)
-                            MSE_list[model] = round(review[model]['MSE'],3)
-                            MAE_list[model] = round(review[model]['MAE'],3)
-                            MAPE_list[model] = round(review[model]['MAPE'],3)
-                    # group_labels = ['LinearRegression', 'Ridge', 'Lasso',"DecisionTreeRegressor","RandomForestRegressor","KNeighborsRegressor"]
-                    fig,axes = plt.subplots(nrows=2,ncols=2,figsize=(35,45))
-                    # Figure 
-                    a = sns.barplot(x=list(r2_score_list.keys()),y=list(r2_score_list.values()),ax=axes[0][0])
-                    a.set_title("R2 SCORE PLOT\n",fontsize=20)
-                    a.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
-                    for size in a.containers:
-                        a.bar_label(size,fontsize=15)
-
-                    # Figure 
-                    b = sns.barplot(x=list(MSE_list.keys()),y=list(MSE_list.values()),ax=axes[0][1])
-                    b.set_title("MSE PLOT\n",fontsize=20)
-                    b.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
-                    for size in b.containers:
-                        b.bar_label(size,fontsize=15)
-
-                    # Figure 
-                    c = sns.barplot(x=list(MAE_list.keys()),y=list(MAE_list.values()),ax=axes[1][0])
-                    c.set_title("MAE PLOT\n",fontsize=20)
-                    c.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
-                    for size in c.containers:
-                        c.bar_label(size,fontsize=15)
-
-                    # Figure 
-                    d = sns.barplot(x=list(MAPE_list.keys()),y=list(MAPE_list.values()),ax=axes[1][1])
-                    d.set_title("MAPE PLOT\n",fontsize=20)
-                    d.set_xticklabels(a.get_xticklabels(),rotation=90,fontsize=15)
-                    for size in d.containers:
-                        d.bar_label(size,fontsize=15)
+                knn = st.selectbox("Want to know the best K value for KNN algo?",("No","Yes"))
+                if knn == "Yes":
+                    min_k = int(st.number_input("Enter min value of K",1))
+                    if (min_k) is 0:
+                        st.warning("k cannot be 0")
+                    st.caption("The max value of k will be ten more than min value of k.")
+                    model_list = {str(i):KNeighborsRegressor(i) for i in range(min_k,min_k+11)}
+                    accuracy_list={}
+                    for model_name,model in model_list.items():
+                        model.fit(data_p_object.train_features,data_p_object.train_target)
+                        accuracy_list[model_name] = round(model.score(data_p_object.val_features,data_p_object.val_target),3)
+                    fig,axes = plt.subplots(figsize=(10,5))
+                    a = sns.barplot(x=list(accuracy_list.keys()),y=list(accuracy_list.values()),ax=axes)
+                    for i in a.containers:
+                        a.bar_label(i)
                     st.write(fig)
-            validate = st.selectbox("Do you want to validate your model using validation data?",("No","Yes"))
-            if validate == "Yes":
-                score_list={}
-                for i in model_obj.trained_models:
-                    score_list[str(i).replace("()","")] = round(i.score(data_p_object.val_features,data_p_object.val_target),3)
-                fig,axes = plt.subplots(figsize=(15,8))
-                a = sns.barplot(x = list(score_list.keys()),y = list(score_list.values()),ax=axes)
-                for i in a.containers:
-                    a.bar_label(i)
-                st.write(fig)
-
-            for_kfold = st.selectbox("Do you want to perform k-Fold to improve model accuracy?",("No","Yes"))
-            st.info("This can change the best model to some other model")
-            st.caption("This will take some time to process, since its itterative process")
-            if for_kfold == "Yes":
-                fig,axes = plt.subplots(figsize=(14,2))
-                splits = st.number_input("Enter a value of splits for k fold: ",10)
-                kf = KFold(n_splits=splits)
-                # from sklearn.linear_model import LinearRegression,Lasso
-                models = [LinearRegression(),Lasso(),Ridge(),DecisionTreeRegressor(),RandomForestRegressor(),KNeighborsRegressor()]
-                score_list = {'LinearRegression':[],'Lasso':[], 'Ridge':[],"DecisionTreeRegressor":[],"RandomForestRegressor":[],"KNeighborsRegressor":[]}
-                for model in models:
-                    for train,test in kf.split(data_p_object.train_features,data_p_object.train_target):
-                        model.fit(data_p_object.train_features.iloc[train],data_p_object.train_target.iloc[train])
-                        score_list[str(model).replace("()","")].append(round(model.score(data_p_object.train_features.iloc[train],data_p_object.train_target.iloc[train]),3))
-                    score_list[str(model).replace("()","")] = max(score_list[str(model).replace("()","")])*100
-                a = sns.barplot(y = list(score_list.keys()),x = list(score_list.values()),ax=axes)
-                for i in a.containers:
-                    a.bar_label(i)
-                st.write(fig)
-            
-            knn = st.selectbox("Want to know the best K value for KNN algo?",("No","Yes"))
-            if knn == "Yes":
-                min_k = int(st.number_input("Enter min value of K",1))
-                if (min_k) is 0:
-                    st.warning("k cannot be 0")
-                st.caption("The max value of k will be ten more than min value of k.")
-                model_list = {str(i):KNeighborsRegressor(i) for i in range(min_k,min_k+11)}
-                accuracy_list={}
-                for model_name,model in model_list.items():
-                    model.fit(data_p_object.train_features,data_p_object.train_target)
-                    accuracy_list[model_name] = round(model.score(data_p_object.val_features,data_p_object.val_target),3)
-                fig,axes = plt.subplots(figsize=(10,5))
-                a = sns.barplot(x=list(accuracy_list.keys()),y=list(accuracy_list.values()),ax=axes)
-                for i in a.containers:
-                    a.bar_label(i)
-                st.write(fig)
-                print("The best value of K is",list(accuracy_list.keys())[list(accuracy_list.values()).index(max(list(accuracy_list.values())))])
-            predict = st.selectbox("Do you want to predict any sample's output?",("No","Yes"))
-            if predict == "Yes":
-                # predict_models = st.multiselect("Select the regression models you want to predict with: ",('LinearRegression', 'Ridge', 'Lasso',"DecisionTreeRegressor","RandomForestRegressor","KNeighborsRegressor"))
-                # st.write(data_p_object.features)
-                categories = data_p_object.features
-                prediction_array={}
-                feature = []
-                for value in categories:
-                    # st.write("enter value for ",value)
-                    # num = st.text_input('exter the value of')
-                    prediction_array[value]=None
-                for k,v in prediction_array.items():
-                    prediction_array[k]=st.number_input(k,v)
-                # st.write(prediction_array)
-                for k,v in prediction_array.items():
-                    feature.append(v)
-                # if type(self.prediction_array)==np.ndarray:
-                model_obj.model_evaluvation_dict['prediction']=model_obj.best_model['model_obj'].predict(np.array([feature]))[0]
-                st.write(int(model_obj.model_evaluvation_dict['prediction']))
-                outval = int(model_obj.model_evaluvation_dict['prediction'])
-                # ans = lablevalu[outval]
-                
-                for name, age in lablevalu.items():
-                    if str(age) == str(outval):
-                        final = name
-                st.write("The final outcome: ",final)
+                    print("The best value of K is",list(accuracy_list.keys())[list(accuracy_list.values()).index(max(list(accuracy_list.values())))])
+                predict = st.selectbox("Do you want to predict any sample's output?",("No","Yes"))
+                if predict == "Yes":
+                    # predict_models = st.multiselect("Select the regression models you want to predict with: ",('LinearRegression', 'Ridge', 'Lasso',"DecisionTreeRegressor","RandomForestRegressor","KNeighborsRegressor"))
+                    # st.write(data_p_object.features)
+                    categories = data_p_object.features
+                    prediction_array={}
+                    feature = []
+                    for value in categories:
+                        # st.write("enter value for ",value)
+                        # num = st.text_input('exter the value of')
+                        prediction_array[value]=None
+                    for k,v in prediction_array.items():
+                        prediction_array[k]=st.number_input(k,v)
+                    # st.write(prediction_array)
+                    for k,v in prediction_array.items():
+                        feature.append(v)
+                    # if type(self.prediction_array)==np.ndarray:
+                    model_obj.model_evaluvation_dict['prediction']=model_obj.best_model['model_obj'].predict(np.array([feature]))[0]
+                    st.write(int(model_obj.model_evaluvation_dict['prediction']))
+                    outval = int(model_obj.model_evaluvation_dict['prediction'])
+                    # ans = lablevalu[outval]
+                    # st.write(lablevalu)
+                    # for name, age in lablevalu.items():
+                    #     if str(age) == str(outval):
+                    #         final = name
+                    # st.write("The final outcome: ",final)
 
             #"""i have to add code for taking input of columns with object """
     #########################################################################################################################################################################
     #CLASSIFICATION
+    with tab3:
         if(st.checkbox("Do you want to perform Classification on your data set?")):
+            # lis_for_target = data_p_object.features
+            # target = st.selectbox("Select the target Variable : ",list(lis_for_target))
+            # if target is not None:
+            #     try:
+            #         data_p_object.input =  data_p_object.data.drop(target,axis=1)
+            #         data_p_object.output = data_p_object.data[target]
+            #         data_p_object.features.remove(target)
+            #         data_p_object.output_name = target
+            #     except:
+            #         st.error("Please enter a valid target variable")
             st.caption("Models that we have:")
             st.caption("LogisticRegression")
             st.caption("GaussianNB")
@@ -861,25 +937,45 @@ if authentication_status == True:
                 st.write(valuess)
             classify = st.selectbox("Do you want to predict any sample's output? ",("No","Yes"))
             if classify == "Yes":
+                type_input = st.selectbox("Do you want to enter a set of testcases as csv file or give individual values?",("Give a CSV file","Individual value"))
                 # predict_models = st.multiselect("Select the regression models you want to predict with: ",('LinearRegression', 'Ridge', 'Lasso',"DecisionTreeRegressor","RandomForestRegressor","KNeighborsRegressor"))
                 # st.write(data_p_object.features)
-                categories = data_p_object.features
-                predict_array={}
-                feature = []
-                for value in categories:
-                    # st.write("enter value for ",value)
-                    # num = st.text_input('exter the value of')
-                    predict_array[value]=None
-                for key,val in predict_array.items():
-                    predict_array[key]=st.number_input(key,val)
-                # st.write(prediction_array)
-                for k,v in predict_array.items():
-                    feature.append(v)
-                st.write(feature)
-                # if type(self.prediction_array)==np.ndarray:
-                model_obj_classification.model_evaluvation_dict['prediction']=model_obj_classification.best_model['Model_obj'].predict(np.array([feature]))[0]
-                # model_obj_classification.model_evaluvation_dict['prediction']=model_obj_classification.best_model['Model_obj'].predict(np.array([feature]))[0]
-                st.write(model_obj_classification.model_evaluvation_dict)
+                if type_input == "Give a CSV file":
+                #    st.write(data_p_object.features)
+                   uploaded_file = st.file_uploader("Enter the dataset you want to test: ")
+                   st.caption("Ensure that the column names for test set are the same as the training set.")
+                   if uploaded_file is not None:
+                        # Can be used wherever a "file-like" object is accepted:
+                        dataframe = pd.read_csv(uploaded_file)
+                        # st.write(dataframe.head())
+                        data_to_predict = dataframe[list(data_p_object.features)]
+                        # st.write(data_to_predict.shape[0])
+                        for i in range (0,data_to_predict.shape[0]):
+                            st.write(data_to_predict.iloc[i])
+
+
+                if type_input == "Individual value":
+                    categories = data_p_object.features
+                    st.write(data_p_object.features)
+                    predict_array={}
+                    feature = []
+                    for value in categories:
+                        # st.write("enter value for ",value)
+                        # num = st.text_input('exter the value of')
+                        predict_array[value]=None
+                    for key,val in predict_array.items():
+                        predict_array[key]=st.number_input(key,val)
+                    # st.write(prediction_array)
+                    for k,v in predict_array.items():
+                        feature.append(v)
+                    # st.write(feature)
+                    # if type(self.prediction_array)==np.ndarray:
+                    model_obj_classification.model_evaluvation_dict['prediction']=model_obj_classification.best_model['Model_obj'].predict_proba(np.array([feature]))[0]
+                    # model_obj_classification.model_evaluvation_dict['prediction']=model_obj_classification.best_model['Model_obj'].predict(np.array([feature]))[0]
+                    class_pred = model_obj_classification.model_evaluvation_dict['prediction']
+                    # labels = LE.
+                    st.write(pd.DataFrame(class_pred))
+                    # st.write(int(model_obj.model_evaluvation_dict['prediction']))
 
         # else:
         #   st.info("Please upload a dataset to continue")
