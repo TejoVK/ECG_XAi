@@ -41,7 +41,7 @@ __login__obj = __login__(auth_token = "courier_auth_token",
 LOGGED_IN = __login__obj.build_login_ui()
 
 if LOGGED_IN == True:
-    tab1, tab2,tab3 = st.tabs(["Preprocess","Apply Regression","Apply  Classification"])
+    tab1,tab1_2, tab2,tab3 = st.tabs(["Preprocess","Visualize","Apply Regression","Apply  Classification"])
     class DataPreprocessing:
         def __init__(self,data):
             self.data = data
@@ -453,9 +453,39 @@ if LOGGED_IN == True:
                     data_p_object.train_features=df(data = scale_object.fit_transform(data_p_object.train_features),columns = data_p_object.features)
                     data_p_object.test_features = df(data = scale_object.fit_transform(data_p_object.test_features),columns = data_p_object.features)
                     data_p_object.val_features = df(data = scale_object.fit_transform(data_p_object.val_features),columns = data_p_object.features)
-                
                 st.write(":partying_face: WOILAAA you have finished the first step i.e., preprocessing :partying_face:")
 
+    with tab1_2:
+            want = st.checkbox("Do you want to visualise different rows together?")
+            if want is True:
+                if uploaded_file is not None:
+                    data = data_p_object.data
+                    # data = pd.DataFrame(data)
+                    rows = st.text_input("Enter the row numbers of the rows you want to visualize, seperated by commas: ")
+                    if rows != "":
+                        # st.write(data_target)
+                        data_target = data_p_object.data[target]
+                        data = data.drop([target], axis=1)
+                        f = rows.split(',')
+                        fig = plt.figure(figsize=(15,10))
+                        for i in range(0,len(f)):
+                        #   if f[i]<data.shape()
+                          plt.plot(data.iloc[int(f[i]),:], label='%s data' %f[i])
+                          plt.legend(loc="upper right")
+                        #   print(int(f[i]))
+                        # plt.show()
+                        st.caption("The predictor feature comparison:")
+                        st.write(fig)
+                        # data[int(f[0])]
+                        fig2 = plt.figure(figsize=(15,10))
+                        for i in range(0,len(f)):
+                          plt.bar('%s data' %f[i],data_target.iloc[int(f[i])])
+                        #   print(int(data_target[i]))
+                        # plt.show()
+                        st.caption("The target feature comparison: ")
+                        st.write(fig2)
+                else:
+                    st.warning("Please upload a dataset to continue")
     #########################################################################################################################################################################
     #REGRESSION
     with tab2:
@@ -725,28 +755,48 @@ if LOGGED_IN == True:
                 if predict == "Yes":
                     # predict_models = st.multiselect("Select the regression models you want to predict with: ",('LinearRegression', 'Ridge', 'Lasso',"DecisionTreeRegressor","RandomForestRegressor","KNeighborsRegressor"))
                     # st.write(data_p_object.features)
-                    categories = data_p_object.features
-                    prediction_array={}
-                    feature = []
-                    for value in categories:
-                        # st.write("enter value for ",value)
-                        # num = st.text_input('exter the value of')
-                        prediction_array[value]=None
-                    for k,v in prediction_array.items():
-                        prediction_array[k]=st.number_input(k,v)
-                    # st.write(prediction_array)
-                    for k,v in prediction_array.items():
-                        feature.append(v)
-                    # if type(self.prediction_array)==np.ndarray:
-                    model_obj.model_evaluvation_dict['prediction']=model_obj.best_model['model_obj'].predict(np.array([feature]))[0]
-                    st.write(int(model_obj.model_evaluvation_dict['prediction']))
-                    outval = int(model_obj.model_evaluvation_dict['prediction'])
-                    # ans = lablevalu[outval]
-                    # st.write(lablevalu)
-                    # for name, age in lablevalu.items():
-                    #     if str(age) == str(outval):
-                    #         final = name
-                    # st.write("The final outcome: ",final)
+                    type_input = st.selectbox("Do you want to enter a set of testcases as csv file or give individual values?",("Give a CSV file","Individual value"))
+                    if type_input == "Give a CSV file":
+                        #    st.write(data_p_object.features)
+                        uploaded_file = st.file_uploader("Enter the dataset you want to test: ")
+                        st.caption("Ensure that the column names for test set are the same as the training set.")
+                        if uploaded_file is not None:
+                            # Can be used wherever a "file-like" object is accepted:
+                            dataframe = pd.read_csv(uploaded_file)
+                            pred_val = []
+                            # st.write(dataframe.head())
+                            data_to_predict = dataframe[list(data_p_object.features)]
+                            # st.write(data_to_predict.shape[0])
+                            for i in range (0,data_to_predict.shape[0]):
+                                model_obj_classification.model_evaluvation_dict['prediction']=model_obj_classification.best_model['Model_obj'].predict(np.array([data_to_predict.iloc[i]]))[0]
+                                class_pred = model_obj_classification.model_evaluvation_dict['prediction']
+                                pred_val.append(class_pred)
+                                # st.write(data_to_predict.iloc[i])
+                            data_to_predict["Predicted values"]=pred_val
+                            st.write(data_to_predict)
+                    if type_input == "Individual value":
+                        categories = data_p_object.features
+                        prediction_array={}
+                        feature = []
+                        for value in categories:
+                            # st.write("enter value for ",value)
+                            # num = st.text_input('exter the value of')
+                            prediction_array[value]=None
+                        for k,v in prediction_array.items():
+                            prediction_array[k]=st.number_input(k,v)
+                        # st.write(prediction_array)
+                        for k,v in prediction_array.items():
+                            feature.append(v)
+                        # if type(self.prediction_array)==np.ndarray:
+                        model_obj.model_evaluvation_dict['prediction']=model_obj.best_model['model_obj'].predict(np.array([feature]))[0]
+                        st.write(int(model_obj.model_evaluvation_dict['prediction']))
+                        # outval = int(model_obj.model_evaluvation_dict['prediction'])
+                        # ans = lablevalu[outval]
+                        # st.write(lablevalu)
+                        # for name, age in lablevalu.items():
+                        #     if str(age) == str(outval):
+                        #         final = name
+                        # st.write("The final outcome: ",final)
 
             #"""i have to add code for taking input of columns with object """
     #########################################################################################################################################################################
