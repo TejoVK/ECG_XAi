@@ -312,13 +312,13 @@ with tab1:
             models = ['FCN- ConvNet','Model- ResidualConvNet', 'ResNet']
             model_name = st.selectbox('Select the model you want to use: ', models)
             if 'FCN- ConvNet' == model_name:
-                model_path = 'models/best_model4_fcn.h5'
+                model_path = 'ge_final/models/best_model4_fcn.h5'
                 fcn_model = tf.keras.models.load_model(model_path)
             if 'Model- ResidualConvNet' == model_name:
-                model_path = 'models/best_model.h5'
+                model_path = 'ge_final/models/best_model.h5'
                 fcn_model = tf.keras.models.load_model(model_path)
             if 'ResNet' == model_name:
-                model_path = 'models\best_model2_res.h5'
+                model_path = 'ge_final/models/best_model2_res.h5'
                 fcn_model = tf.keras.models.load_model(model_path)
     
     
@@ -414,7 +414,7 @@ with tab2:
         ResNet""")
             # model1_image = 'logos/output5.png'
             # st.image(model1_image, use_column_width=True)
-            history_resnet = np.load('npy/res_historyp.npy', allow_pickle=True).item()
+            history_resnet = np.load('ge_final/npy/res_historyp.npy', allow_pickle=True).item()
             fig, ax = plt.subplots(figsize=(10, 6))
             ax.plot(history_resnet['Recall'], label='Training Recall')
             ax.plot(history_resnet['val_Recall'], label='Validation Recall')
@@ -447,7 +447,7 @@ with tab2:
     """)
         # model2_image = 'logos/6.png'
         # st.image(model2_image, use_column_width=True)
-        history_convonet = np.load('npy/fcn_historyp.npy', allow_pickle=True).item()
+        history_convonet = np.load('ge_final/npy/fcn_historyp.npy', allow_pickle=True).item()
         fig_conv, ax = plt.subplots(figsize=(10, 6))
         ax.plot(history_convonet['Recall'], label='Training Recall')
         ax.plot(history_convonet['val_Recall'], label='Validation Recall')
@@ -480,7 +480,7 @@ with tab2:
     """)
         # model3_image = 'logos/7.png'
         # st.image(model3_image, use_column_width=True)
-        history_Residual = np.load('npy/historyp.npy', allow_pickle=True).item()
+        history_Residual = np.load('ge_final/npy/historyp.npy', allow_pickle=True).item()
         fig_residual, ax = plt.subplots(figsize=(10, 6))
         ax.plot(history_Residual['Recall'], label='Training Recall')
         ax.plot(history_Residual['val_Recall'], label='Validation Recall')
