@@ -45,7 +45,7 @@ st.markdown(
 )
 
 # Render the styled heading and subtitle
-logo_image = 'logos/amritalogo.png'
+logo_image = 'ge_final/logos/amritalogo.png'
 st.image(logo_image, use_column_width=True)
 
 st.markdown(
