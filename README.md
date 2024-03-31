@@ -17,7 +17,7 @@ This repository contains code and documentation for a novel clinician-in-the-loo
 2. Install dependencies:
 ```bash
     pip install -r requirements.txt
-    ```
+```
 
 ## Usage
 1. Navigate to the `ge_final` directory.
@@ -26,7 +26,7 @@ This repository contains code and documentation for a novel clinician-in-the-loo
 
 ```bash
    python finalcode.py
-   ```
+```
 3. You can use the sample data in the test dir to input ECG data for analysis.
 4. View the generated heatmaps and diagnostic results.
 5. Engage with the chatbot for additional inquiries.
