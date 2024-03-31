@@ -30,3 +30,20 @@ This repository contains code and documentation for a novel clinician-in-the-loo
 3. You can use the sample data in the `test` dir to input ECG data for analysis.
 4. View the generated heatmaps and diagnostic results.
 5. Engage with the chatbot for additional inquiries.
+
+## Streamlit Deployment
+
+Our project is deployed on Streamlit and can be accessed via the following link:
+
+[Streamlit Deployment](https://ecgxai-8ifypubpj9o4qgptjjq9lm.streamlit.app/)
+
+## Paper Publication
+
+Our project has been published in IEEE. The paper can be accessed on IEEE Xplore via the following link:
+
+[IEEE Xplore](https://ieeexplore.ieee.org/document/10442356)
+
+Alternatively, an openly available version of the paper can be found on ResearchGate:
+
+[ResearchGate](https://www.researchgate.net/publication/378571216_CureNet_Improving_Explainability_of_AI_Diagnosis_Using_Custom_Large_Language_Models?_tp=eyJjb250ZXh0Ijp7ImZpcnN0UGFnZSI6ImhvbWUiLCJwYWdlIjoicHJvZmlsZSIsInByZXZpb3VzUGFnZSI6ImhvbWUiLCJwb3NpdGlvbiI6InBhZ2VDb250ZW50In19)
+
